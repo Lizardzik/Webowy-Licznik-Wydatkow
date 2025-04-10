@@ -1,0 +1,80 @@
+﻿@model ExpenseTracker.Models.User
+@{
+    Layout = null;
+    ViewData["isDashboard"] = true;
+    var isChecked = ViewBag.IsChecked as bool?;
+    Dictionary<string, object> htmlAttributes = new Dictionary<string, object>() {
+        { "Password", new Dictionary<string, object> { { "name", "PasswordLogin" } } },
+        { "Nickname", new Dictionary<string, object> { { "name", "NicknameLogin" } } },
+    };
+}
+
+<head>
+	<title>Login Page</title>
+    <link rel="stylesheet" href="https://cdn.syncfusion.com/ej2/25.2.3/fabric.css" />
+	<link rel="stylesheet" type="text/css" href="~/css/login.css">
+    <script src="https://cdn.syncfusion.com/ej2/25.2.3/dist/ej2.min.js"></script>
+    <script src="~/js/login.js"></script>
+</head>
+<body>
+    <div class="main">
+        @if (ViewBag.isRegistered != null && ViewBag.isRegistered == true)
+        {
+            @Html.EJS().Message("msg-success_filled").Severity(Syncfusion.EJ2.Notifications.Severity.Success).Variant(Syncfusion.EJ2.Notifications.Variant.Filled).Content("Your account has been created successfully!").Render()
+        }
+        @if (!string.IsNullOrEmpty(ViewBag.LoginError))
+        {
+            @Html.EJS().Message("msg-error_filled").Severity(Syncfusion.EJ2.Notifications.Severity.Error).Variant(Syncfusion.EJ2.Notifications.Variant.Filled).Content(@ViewBag.LoginError).Render()
+        }
+        <input type="checkbox" id="chk" aria-hidden="true" checked="@ViewBag.isChecked">
+
+            <div class="signup">
+            <form asp-action="Register" enctype="multipart/form-data">
+                <label for="chk" aria-hidden="true" class="labelForm ">Sign up</label>
+                    <div class="form-group">
+                    <span asp-validation-for="FirstName" class="text-danger "></span>
+                        @Html.EJS().TextBox("firstname").Value(Model.FirstName).Placeholder("First Name").FloatLabelType(Syncfusion.EJ2.Inputs.FloatLabelType.Auto).Render()    
+                    </div>
+                    <div class="form-group">
+                    <span asp-validation-for="LastName" class="text-danger"></span>
+                    @Html.EJS().TextBox("lastname").Value(Model.LastName).Placeholder("Last Name").FloatLabelType(Syncfusion.EJ2.Inputs.FloatLabelType.Auto).Render()
+                    </div>
+                    <div class="form-group">
+                    <span asp-validation-for="Nickname" class="text-danger "></span>
+                    @Html.EJS().TextBox("nickname").Value(Model.Nickname).Placeholder("Nick Name").FloatLabelType(Syncfusion.EJ2.Inputs.FloatLabelType.Auto).Render()
+                       
+                    </div>
+                    <div class="form-group">
+                    <span asp-validation-for="Password" class="text-danger "></span>
+                        @Html.EJS().TextBox("password").Type("password").Placeholder("Password").FloatLabelType(Syncfusion.EJ2.Inputs.FloatLabelType.Auto).Value(Model.Password).Render()
+                    </div>
+                     <div class="form-group-button">
+                    @Html.EJS().Uploader("ProfileImage").Multiple(false).AllowedExtensions(".jpg").Render()
+                    </div>
+                    <div class="form-group">
+                        @Html.EJS().Button("primarybtn").Content("Register").CssClass("btn btn-success").Render()
+                    </div>
+                </form>
+            </div>
+
+        <div class="login">
+            <form asp-action="Login">
+                <label for="chk" aria-hidden="true" class="labelForm">Login</label>
+                <div class="form-group">
+                    @Html.EJS().TextBox("nickLogin").Placeholder("Nick Name").HtmlAttributes(htmlAttributes["Nickname"] as IDictionary<string, object>).FloatLabelType(Syncfusion.EJ2.Inputs.FloatLabelType.Auto).Render() 
+                </div>
+                <div class="form-group">
+                    @Html.EJS().TextBox("pswdLogin").Type("password").Placeholder("Password").HtmlAttributes(htmlAttributes["Password"] as IDictionary<string, object>).FloatLabelType(Syncfusion.EJ2.Inputs.FloatLabelType.Auto).Render()
+                
+                </div>
+                <div class="form-group">
+                    @Html.EJS().Button("secondbtn").Content("Login").CssClass("btn btn-success").Render()
+                </div>
+            </form>
+        </div>
+
+    </div>
+          
+    @Html.EJS().ScriptManager()
+</body>
+

@@ -1,0 +1,38 @@
+﻿@{
+    var userImage = @Context.Session.GetString("UserImage");
+    var imageUrl = !string.IsNullOrEmpty(userImage) ? userImage : "~/userImage.png";
+}
+
+<nav class="navbar sticky-top my-navbar bg-light" id="navbar">
+    <div class="container-fluid py-2 px-4">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <div class="navbar-icons">
+            <i class="fa-solid fa-bell"></i>
+            <i class="fa-solid fa-comment-dots"></i>
+            <div class="profile-container">
+                <img src="@Url.Content(imageUrl)" alt="Profile Image" class="profile-pic" id="profileImage" />
+                <div class="profile-tooltip" id="profileTooltip">
+                    <a href="@Url.Action("User", "Home")">Go to User Settings</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var profileImage = document.getElementById('profileImage');
+        var profileTooltip = document.getElementById('profileTooltip');
+
+        profileImage.onclick = function (e) {
+            profileTooltip.classList.toggle('active');
+            e.stopPropagation();
+        };
+
+        document.addEventListener('click', function (e) {
+            if (e.target !== profileImage) {
+                profileTooltip.classList.remove('active');
+            }
+        });
+    });
+</script>

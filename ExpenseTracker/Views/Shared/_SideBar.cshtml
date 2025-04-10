@@ -1,0 +1,69 @@
+﻿@{
+    List<Object> menuItems = new List<Object>();
+
+    menuItems.Add(new
+    {
+        text = "General",
+        separator = true,
+    });
+    menuItems.Add(new
+    {
+        text = "Dashboard",
+        url = "/Dashboard",
+        iconCss = "fa-solid fa-house-laptop"
+    });
+    menuItems.Add(new
+    {
+        text = "Categories",
+        iconCss = "fa-solid fa-layer-group",
+        items = new List<object>()
+            {
+                new { text = "Display", url = "/Category" },
+                new { separator = true},
+                new { text = "Add" , url ="/Category/AddOrEdit" }
+            }
+    });
+    menuItems.Add(new
+    {
+        text = "Transactions",
+        iconCss = "fa-solid fa-shuffle",
+        items = new List<object>()
+            {
+                new { text = "Display" ,  url = "/Transaction" },
+                new { separator = true},
+                new { text = "Add" , url ="/Transaction/AddOrEdit" }
+            }
+    });
+    menuItems.Add(new
+    {
+        text = "Other",
+        separator = true,
+    });
+    menuItems.Add(new
+    {
+        text = "Settings",
+        url = "/Home/User",
+        iconCss = "fa-solid fa-wrench"
+    });
+    menuItems.Add(new
+    {
+        text = "Log out",
+        url = "/Home/Logout",
+        iconCss = "fa-solid fa-arrow-right-from-bracket"
+    });
+  
+}
+@{
+    Html.EJS().Sidebar("default-sidebar").Width(250).CloseOnDocumentClick(false).EnableGestures(false).EnableDock(true).DockSize(85).ContentTemplate(
+    @<div class="sidebar-custom">
+        <div class="title-header">
+             <span class="title">Menu </span>
+            <button id="toggle-btn" class="e-btn e-flat e-icon-btn" data-toggle="tooltip" data-placement="right" title="Click to toggle the main menu">
+               <i class="fa-solid fa-angles-left"></i>
+            </button>
+        </div>
+        @Html.EJS().Menu("menu").HamburgerMode(true).ShowItemOnClick(true).Orientation(Syncfusion.EJ2.Navigations.Orientation.Vertical).Items(menuItems).Render()
+    </div>).Render();
+
+  
+}

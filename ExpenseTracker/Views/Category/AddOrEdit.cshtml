@@ -1,0 +1,118 @@
+﻿@model ExpenseTracker.Models.Category
+
+@{
+    Dictionary<string, object> htmlAttributes = new Dictionary<string, object>() {
+        { "Title", new Dictionary<string, object> { { "name", "Title" } } },
+        { "Icon", new Dictionary<string, object> { { "name", "Icon" } } },
+        { "Button", new Dictionary<string, object> { { "type", "submit" } } },
+    };
+
+
+    var expenseIcons = new string[] {
+        "🛒", "🍔", "🏠", "🚗", "✈️", "🏖️", "🎉", "⚽", "🎨", "📚",
+        "💊", "👕", "🎁", "🍕", "🍦", "📱", "💻", "🔧", "🛠️", "💡"
+    };
+
+ 
+    var incomeIcons = new string[] {
+        "💰", "💼", "🏦", "📈", "💳", "🎫", "🏆", "💵", "💶", "💷",
+        "💴", "💎", "🤑", "💹", "📊", "🧾", "📑", "📋", "📌", "📍"
+    };
+
+    ViewData["PageTitle"] = Model.CategoryId == 0 ? "Create a new category" : "Edit category";
+}
+
+
+<div class="row">
+    <div class="col-md-7">
+        <div class="widget p-5 @(Model.Type == "Income" ? "income-widget" : "expense-widget")">
+            <form asp-action="AddOrEdit">
+                <div asp-validation-summary="ModelOnly" class="text-danger fs-6"></div>
+                <input type="hidden" name="CategoryId" value="@Model.CategoryId" />
+                    <div class="type-toggle-container">
+                        <div class="type-toggle-group">
+                            <div class="toggle-option">
+                                <input type="radio" class="toggle-input" id="expenseType" name="Type" value="Expense" checked="@(Model.Type == "Expense")">
+                                <label for="expenseType" class="toggle-label expense-toggle">
+                                    <i class="fas fa-arrow-circle-down"></i> Expense
+                                </label>
+                            </div>
+                            <div class="toggle-option">
+                                <input type="radio" class="toggle-input" id="incomeType" name="Type" value="Income" checked="@(Model.Type == "Income")">
+                                <label for="incomeType" class="toggle-label income-toggle">
+                                    <i class="fas fa-arrow-circle-up"></i> Income
+                                </label>
+                            </div>
+                        </div>
+
+                    <span asp-validation-for="Type" class="text-danger fs-6"></span>
+                </div>
+ 
+                <div class="control-section">
+                    <div class="control_wrapper textbox-control-section">
+                        @Html.EJS().TextBox("Title").Value(Model.Title).Placeholder("Title").FloatLabelType(Syncfusion.EJ2.Inputs.FloatLabelType.Always).HtmlAttributes(htmlAttributes["Title"] as IDictionary<string, object>).Render()
+                    </div>
+                    <span asp-validation-for="Title" class="text-danger fs-6"></span>
+                </div>
+                <div class="control-section mb-3">
+                    <div class="control_wrapper textbox-control-section">
+                        @Html.EJS().DropDownList("iconSelect").PopupHeight("200px").Value(Model.Icon).Placeholder("Select Icon").HtmlAttributes(htmlAttributes["Icon"] as IDictionary<string, object>).FloatLabelType(Syncfusion.EJ2.Inputs.FloatLabelType.Auto).DataSource(Model.Type == "Income" ? incomeIcons : expenseIcons).Render()
+                    </div>
+                    <span asp-validation-for="Icon" class="text-danger fs-6"></span>
+                </div>
+
+                <div class="control-section mb-3">
+                    @Html.EJS().Button("primarybtn").Content("Submit").CssClass(Model.Type == "Income" ? "e-success" : "e-danger").HtmlAttributes(htmlAttributes["Button"] as IDictionary<string, object>).Render()
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="widget col-md-5 d-flex justify-content-center align-items-center @(Model.Type == "Income" ? "income-widget" : "expense-widget")">
+        <i class="@(Model.Type == "Income" ? "fas fa-money-bill-wave fa-10x text-success" : "fas fa-shopping-cart fa-10x text-danger")"></i>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Handle radio button changes
+            document.querySelectorAll('input[name="Type"]').forEach(radio => {
+                radio.addEventListener('change', function() {
+                    const isIncome = this.value === "Income";
+
+                    // Update widget colors
+                    document.querySelectorAll('.widget').forEach(widget => {
+                        widget.classList.toggle('income-widget', isIncome);
+                        widget.classList.toggle('expense-widget', !isIncome);
+                    });
+
+                    // Update icon
+                    const icon = document.querySelector('.col-md-5.widget i');
+                    icon.className = isIncome
+                        ? 'fas fa-money-bill-wave fa-10x text-success'
+                        : 'fas fa-shopping-cart fa-10x text-danger';
+
+                    // Update button color
+                    const button = document.getElementById('primarybtn');
+                    button.classList.toggle('e-success', isIncome);
+                    button.classList.toggle('e-danger', !isIncome);
+
+                    // Update dropdown icons
+                    const dropdown = document.getElementById('iconSelect').ej2_instances[0];
+                    dropdown.dataSource = isIncome ? @Json.Serialize(incomeIcons) : @Json.Serialize(expenseIcons);
+                    dropdown.refresh();
+                });
+            });
+        });
+
+        // Add animation on selection
+        document.querySelectorAll('.btn-toggle').forEach(btn => {
+            btn.addEventListener('click', function () {
+                this.querySelector('i').classList.add('animate__animated', 'animate__bounce');
+                setTimeout(() => {
+                    this.querySelector('i').classList.remove('animate__animated', 'animate__bounce');
+                }, 1000);
+            });
+        });
+    </script>
+}
