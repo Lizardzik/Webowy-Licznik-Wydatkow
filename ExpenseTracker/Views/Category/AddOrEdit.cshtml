@@ -5,6 +5,7 @@
         { "Title", new Dictionary<string, object> { { "name", "Title" } } },
         { "Icon", new Dictionary<string, object> { { "name", "Icon" } } },
         { "Button", new Dictionary<string, object> { { "type", "submit" } } },
+        { "CancelButton", new Dictionary<string, object> { { "type", "button" } } },
     };
 
 
@@ -63,6 +64,8 @@
 
                 <div class="control-section mb-3">
                     @Html.EJS().Button("primarybtn").Content("Submit").CssClass(Model.Type == "Income" ? "e-success" : "e-danger").HtmlAttributes(htmlAttributes["Button"] as IDictionary<string, object>).Render()
+
+                    @Html.EJS().Button("cancelbtn").Content("Cancel").CssClass("e-primary").HtmlAttributes(htmlAttributes["CancelButton"] as IDictionary<string, object>).Render()
                 </div>
             </form>
         </div>
@@ -112,6 +115,13 @@
                 setTimeout(() => {
                     this.querySelector('i').classList.remove('animate__animated', 'animate__bounce');
                 }, 1000);
+            });
+        });
+
+         document.addEventListener('DOMContentLoaded', function() {
+            // Add click event to Cancel button
+            document.getElementById('cancelbtn').addEventListener('click', function() {
+                window.location.href = '@Url.Action("Index", "Category")';
             });
         });
     </script>

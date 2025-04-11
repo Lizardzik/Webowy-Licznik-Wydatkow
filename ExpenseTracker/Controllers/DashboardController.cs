@@ -37,8 +37,8 @@ namespace ExpenseTracker.Controllers
             ViewBag.Expense = Expense.ToString("C0");
 
             //Balance
-            int Balance = Income - Expense;        
-            ViewBag.Balance = String.Format(culture, "{0:C0}", Balance);
+            int Balance = Income - Expense;
+            ViewBag.Balance = Balance.ToString("C0");
 
             //Chars - Expenses
             ViewBag.CharData = transactions.Where(i => i.Category.Type == "Expense").GroupBy(j => j.Category.CategoryId).Select(k => new
@@ -77,6 +77,8 @@ namespace ExpenseTracker.Controllers
                                     income = income == null ? 0 : income.income,
                                     expense = expense == null ? 0 : expense.expense,
                                 };
+
+
 
             // Recent Transactions - include CategoryType in the query
             ViewBag.RecentTransactions = await _context.Transactions

@@ -25,10 +25,31 @@
 
         if (action != "Index")
         {
-            items.Add(new Syncfusion.EJ2.Navigations.BreadcrumbItem
-                    {
-                        Text = action
-                    });
+            // Check if we're in AddOrEdit action
+            if (action == "AddOrEdit")
+            {
+                // Check for ID in route values first (URL path parameter)
+                var routeId = ViewContext.RouteData.Values["id"]?.ToString();
+
+                // If not in route, check for ID in query string
+                var queryId = Context.Request.Query["id"].ToString();
+
+                // Determine if we're editing based on either parameter source
+                var hasId = !string.IsNullOrEmpty(routeId) || !string.IsNullOrEmpty(queryId);
+                var operationType = hasId ? "Edit" : "Add";
+
+                items.Add(new Syncfusion.EJ2.Navigations.BreadcrumbItem
+                        {
+                            Text = operationType
+                        });
+            }
+            else
+            {
+                items.Add(new Syncfusion.EJ2.Navigations.BreadcrumbItem
+                        {
+                            Text = action
+                        });
+            }
         }
     }
 }
@@ -86,7 +107,7 @@
                                     </div>
                                 </div>
                             </div>
-                        }               
+                        }
                         @RenderBody()
                     </main>
                 </div>

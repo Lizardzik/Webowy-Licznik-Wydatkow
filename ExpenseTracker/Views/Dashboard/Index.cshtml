@@ -14,43 +14,61 @@
 
 @* Summary Widgets*@
 <div class="row mb-4">
-        <div class="col-md-4">
-            <div class="d-flex flex-row widget summary income-widget">
-                <div class="d-flex flex-column justify-content-center p-5 icon-wrapper">
-                    <i class="fa-solid fa-arrow-trend-up fa-2xl"></i>
-                </div>
-                <div class="d-flex flex-column m-auto py-3 text-wrapper">
-                    <span class="lead">Total Income</span>
-                    <h1 class="display-6 fw-bold">@ViewBag.Income</h1>
-                </div>
+    <div class="col-md-4">
+        <div class="d-flex flex-row widget summary income-widget" id="incomeWidget">
+            <div class="d-flex flex-column justify-content-center p-5 icon-wrapper">
+                <i class="fa-solid fa-arrow-trend-up fa-2xl"></i>
+            </div>
+            <div class="d-flex flex-column m-auto py-3 text-wrapper">
+                <span class="lead">Total Income</span>
+                <h1 class="display-6 fw-bold">@ViewBag.Income</h1>
             </div>
         </div>
+    </div>
 
-        <div class="col-md-4">
-            <div class="d-flex flex-row widget summary expense-widget">
-                <div class="d-flex flex-column justify-content-center p-5 icon-wrapper">
-                    <i class="fa-solid fa-arrow-trend-down fa-2xl"></i>
-                </div>
-                <div class="d-flex flex-column m-auto py-3 text-wrapper">
+    <div class="col-md-4">
+        <div class="d-flex flex-row widget summary expense-widget" id="expenseWidget">
+            <div class="d-flex flex-column justify-content-center p-5 icon-wrapper">
+                <i class="fa-solid fa-arrow-trend-down fa-2xl"></i>
+            </div>
+            <div class="d-flex flex-column m-auto py-3 text-wrapper">
                 <span class="lead">Total Expenses</span>
-                    <h1 class="display-6 fw-bold">@ViewBag.Expense</h1>
-                </div>
+                <h1 class="display-6 fw-bold">@ViewBag.Expense</h1>
             </div>
         </div>
+    </div>
 
-        <div class="col-md-4">
-            <div class="d-flex flex-row widget summary balance-widget">
-                <div class="d-flex flex-column justify-content-center p-5 icon-wrapper">
-                    <i class="fa-solid fa-sack-dollar fa-2xl"></i>
-                </div>
-                <div class="d-flex flex-column m-auto py-3 text-wrapper">
+    <div class="col-md-4">
+        <div class="d-flex flex-row widget summary balance-widget">
+            <div class="d-flex flex-column justify-content-center p-5 icon-wrapper">
+                <i class="fa-solid fa-sack-dollar fa-2xl"></i>
+            </div>
+            <div class="d-flex flex-column m-auto py-3 text-wrapper">
                 <span class="lead">Total Balance</span>
-                    <h1 class="display-6 fw-bold">@ViewBag.Balance</h1>
-                </div>
+                <h1 class="display-6 fw-bold">@ViewBag.Balance</h1>
             </div>
         </div>
+    </div>
 </div>
 
+@* Transaction Modal *@
+<div class="modal fade" id="transactionModal" tabindex="-1" aria-labelledby="transactionModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="transactionModalLabel">View Transactions</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Do you want to see all of your transactions?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <a href="@Url.Action("Index", "Transaction")" class="btn btn-primary">View Transactions</a>
+            </div>
+        </div>
+    </div>
+</div>
 @*Widget Charts*@
 <div class="row mb-4">
     <div class="col-md-4">
@@ -139,6 +157,8 @@
  </div>
 
 @*Recent transactions and Categories*@
+
+
 <div class="row">
     <div class="col-md-6">
         <div class="widget" style="height: 410px !important;">
@@ -189,4 +209,28 @@
     ${else}
         <span class="badge bg-danger">${Type}</span>
     ${/if}
+</script>
+
+
+
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Income and Expense widget click handlers
+        var incomeWidget = document.getElementById('incomeWidget');
+        var expenseWidget = document.getElementById('expenseWidget');
+        var transactionModal = new bootstrap.Modal(document.getElementById('transactionModal'));
+
+        incomeWidget.addEventListener('click', function() {
+            sessionStorage.setItem('transactionFilter', 'income');
+            document.getElementById('transactionModalLabel').textContent = 'Income Transactions';
+            transactionModal.show();
+        });
+
+        expenseWidget.addEventListener('click', function() {
+            sessionStorage.setItem('transactionFilter', 'expense');
+            document.getElementById('transactionModalLabel').textContent = 'Expense Transactions';
+            transactionModal.show();
+        });
+    });
 </script>

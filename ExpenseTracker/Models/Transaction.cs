@@ -17,7 +17,7 @@ namespace ExpenseTracker.Models
         public int Amount {  get; set; }
 
         [Column(TypeName = "nvarchar(75)")]
-        [Required(ErrorMessage="Please give a note for this transaction")]
+        [Required(ErrorMessage="Please give a note for this transaction.")]
         public string Note { get; set; }
         public DateTime Date { get; set; } = DateTime.Now;
 
