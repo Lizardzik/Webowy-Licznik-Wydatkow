@@ -10,6 +10,8 @@
     };
     var dropdownFields = new Syncfusion.EJ2.DropDowns.DropDownListFieldSettings { Text = "TitleWithIcon", Value = "CategoryId" };
     ViewData["PageTitle"] = Model.CategoryId == 0 ? "Create a new Transaction" : "Edit Transaction";
+
+
 }
 <div class="row">
     <div class="col-md-7">
@@ -46,7 +48,29 @@
         </div>
     </div>
     <div class="widget col-md-5 d-flex justify-content-center align-items-center">
-        <i class="fa-solid fa-money-bill-trend-up fa-10x text-info"></i>
+        @{
+            string type = "Expense"; // Default value
+
+            // Get the categories list and cast it to the proper type
+            var categories = ViewBag.Categories as IEnumerable<Category>;
+            if (categories != null)
+            {
+                var category = categories.FirstOrDefault(c => c.CategoryId == Model.CategoryId);
+                if (category != null)
+                {
+                    type = category.Type;
+                }
+            }
+
+            if (type == "Income")
+            {
+                <i id="transactionIcon" class="fa-solid fa-money-bill-transfer fa-10x text-success"></i>
+            }
+            else
+            {
+                <i id="transactionIcon" class="fa-solid fa-credit-card fa-10x text-danger"></i>
+            }
+        }
     </div>
 </div>
 @section Scripts {

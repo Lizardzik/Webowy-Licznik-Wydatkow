@@ -65,6 +65,9 @@ namespace ExpenseTracker.Controllers
             {
                 HttpContext.Session.SetString("Nickname", user.Nickname);
                 HttpContext.Session.SetInt32("UserId", user.Id);
+
+                TempData["WelcomeUser"] = user.Nickname;
+
                 return RedirectToAction("Index", "Dashboard");
             }
 

@@ -1,4 +1,5 @@
-﻿@{
+﻿@using Syncfusion.EJ2.Notifications
+@{
 	ViewData["isDashboard"] = true;
 }
 @model ExpenseTracker.Models.User
@@ -10,6 +11,16 @@
         @TempData["SuccessMessage"]
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
+}
+
+@*Welcome message alert*@
+
+@if (TempData["WelcomeUser"] != null)
+{
+    <div id="welcome-overlay">
+        @Html.EJS().Message("welcome-message").Severity(Syncfusion.EJ2.Notifications.Severity.Success).Variant(Syncfusion.EJ2.Notifications.Variant.Text).Content("Welcome, " + TempData["WelcomeUser"] + "!").Render()
+    </div>
+ 
 }
 
 @* Summary Widgets*@
@@ -220,6 +231,12 @@
         var incomeWidget = document.getElementById('incomeWidget');
         var expenseWidget = document.getElementById('expenseWidget');
         var transactionModal = new bootstrap.Modal(document.getElementById('transactionModal'));
+        var loadingElements = document.querySelectorAll('.e-spin-material, .e-spin-bootstrap, .e-spin-fabric, .e-loading');
+        loadingElements.forEach(function (el) {
+            el.style.display = 'none';
+        });
+
+       
 
         incomeWidget.addEventListener('click', function() {
             sessionStorage.setItem('transactionFilter', 'income');
@@ -232,5 +249,25 @@
             document.getElementById('transactionModalLabel').textContent = 'Expense Transactions';
             transactionModal.show();
         });
-    });
+
+        //Welcome message
+         setTimeout(function() {
+                var welcomeOverlay = document.getElementById('welcome-overlay');
+                if (welcomeOverlay) {
+                    welcomeOverlay.style.animation = 'fadeOut 0.8s';
+                    setTimeout(function() {
+                        welcomeOverlay.style.display = 'none';
+                        
+
+                        // Show loading elements again if needed
+                        loadingElements.forEach(function(el) {
+                            el.style.display = '';
+                        });
+                    }, 800);
+                }
+            }, 2000);
+        });
+
+
 </script>
+
