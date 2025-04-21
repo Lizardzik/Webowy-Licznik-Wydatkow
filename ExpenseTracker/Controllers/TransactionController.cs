@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using ExpenseTracker.Data;
 using ExpenseTracker.Models;
+using ExpenseTracker.Services;
 
 namespace ExpenseTracker.Controllers
 {
@@ -14,10 +15,12 @@ namespace ExpenseTracker.Controllers
     public class TransactionController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly NotificationService _notificationService;
 
-        public TransactionController(ApplicationDbContext context)
+        public TransactionController(ApplicationDbContext context, NotificationService notificationService)
         {
             _context = context;
+            _notificationService = notificationService;
         }
 
         // GET: Transaction
@@ -60,26 +63,29 @@ namespace ExpenseTracker.Controllers
         {
             var userNickname = HttpContext.Session.GetString("Nickname");
             var userId = _context.User.Where(u => u.Nickname == userNickname).Select(u => u.Id).FirstOrDefault();
+
             if (ModelState.IsValid)
             {
                 transaction.UserId = userId;
+
                 if (transaction.TransactionId == 0)
-                {
                     _context.Add(transaction);
-                }
                 else
-                {
                     _context.Update(transaction);
-                }
-              
+
+                // Najpierw zapisz zmiany
                 await _context.SaveChangesAsync();
+
+                // Dopiero potem wyślij powiadomienie
+                await _notificationService.CreateTransactionNotification(transaction);
+
                 return RedirectToAction(nameof(Index));
             }
+
             PopulateCategories();
+            ViewData["CategoryId"] = new SelectList(_context.Categories, "Id", "Title", transaction.CategoryId);
             return View(transaction);
         }
-
-        
 
         // POST: Transaction/Delete/5
         [HttpPost, ActionName("Delete")]

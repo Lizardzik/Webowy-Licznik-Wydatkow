@@ -1,4 +1,5 @@
 using ExpenseTracker.Data;
+using ExpenseTracker.Services;
 using Microsoft.EntityFrameworkCore;
 using System.Data.Common;
 
@@ -10,6 +11,12 @@ builder.Services.AddControllersWithViews();
 //DATABASE
 builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+// Rejestracja serwisu powiadomieñ
+builder.Services.AddScoped<NotificationService>();
+
+// Rejestracja us³ugi t³a do generowania raportów tygodniowych
+builder.Services.AddHostedService<NotificationBackgroundService>();
+
 //SESSION
 builder.Services.AddSession(options =>
 {
@@ -17,6 +24,8 @@ builder.Services.AddSession(options =>
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
 });
+
+builder.Services.AddHttpContextAccessor();
 //Syncfusion LICENSE
 Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Mgo+DSMBMAY9C3t2UFhhQlJBfV5AQmBIYVp/TGpJfl96cVxMZVVBJAtUQF1hTX5WdURiWH1bdH1TRWBV");
 

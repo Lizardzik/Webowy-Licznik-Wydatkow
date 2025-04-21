@@ -1,6 +1,7 @@
 ﻿@{
     bool isDashboardPage = ViewData["isDashboard"] != null;
     bool isUserPage = ViewData["isUserPage"] != null;
+    bool hasWelcomeUser = TempData["WelcomeUser"] != null;
 
     var items = new List<Syncfusion.EJ2.Navigations.BreadcrumbItem>();
 
@@ -71,7 +72,7 @@
 </head>
 
 <body cite="e-bigger">
-    @if (isDashboardPage || isUserPage)
+    @if ((isDashboardPage || isUserPage) && !hasWelcomeUser)
     {
         <div id="loading-overlay" class="loading-overlay">
             <img src="~/loading.gif" alt="Loading..." class="loading-gif" />

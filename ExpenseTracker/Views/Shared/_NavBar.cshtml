@@ -7,8 +7,29 @@
     <div class="container-fluid py-2 px-4">
         <i class="fa-solid fa-magnifying-glass"></i>
         <div class="navbar-icons">
-            <i class="fa-solid fa-bell"></i>
-            <i class="fa-solid fa-comment-dots"></i>
+            <div class="notification-icon">
+                <i class="fa-solid fa-bell" id="notificationBell"></i>
+                <span class="notification-badge" id="transactionNotificationBadge"></span>
+                <div class="notification-tooltip" id="bellTooltip">
+                    <div class="notification-header">
+                        <h5>Notifications</h5>
+                        <button id="markAllReadBtn" class="btn btn-outline-primary">Mark all as read</button>
+                    </div>  
+                </div>
+            </div>
+            <div class="notification-icon">
+                <i class="fa-solid fa-comment-dots" id="weeklyReportIcon"></i>
+                <span class="notification-badge report-badge" id="weeklyReportBadge"></span>
+                <div class="notification-tooltip" id="reportTooltip">
+                    <div class="notification-header">
+                        <h5>Tygodniowy Raport</h5>
+                        <button id="generateReportBtn" class="btn btn-sm btn-outline-primary">Generuj raport</button>
+                    </div>
+                    <div class="notification-content" id="reportContent">
+                        <p>Brak dostępnych raportów</p>
+                    </div>
+                </div>
+            </div>
             <div class="profile-container">
                 <img src="@Url.Content(imageUrl)" alt="Profile Image" class="profile-pic" id="profileImage" />
                 <div class="profile-tooltip" id="profileTooltip">
@@ -19,8 +40,83 @@
     </div>
 </nav>
 
+<style>
+    .notification-icon {
+        position: relative;
+        margin-right: 15px;
+        cursor: pointer;
+    }
+    
+    .notification-badge {
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        background-color: #f44336;
+        color: white;
+        border-radius: 50%;
+        min-width: 18px;
+        height: 18px;
+        font-size: 12px;
+        text-align: center;
+        line-height: 18px;
+        display: none;
+    }
+    
+    .report-badge {
+        background-color: #FFC107;
+        display: none;
+    }
+    
+    .report-badge.active {
+        display: block;
+    }
+    
+    .notification-tooltip {
+        position: absolute;
+        top: 100%;
+        right: -100px;
+        width: 300px;
+        background-color: white;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        padding: 10px;
+        z-index: 1000;
+        display: none;
+    }
+    
+    .notification-tooltip.active {
+        display: block;
+    }
+    
+    .notification-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 8px;
+        margin-bottom: 8px;
+    }
+    
+    .notification-content {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    
+    .notification-item {
+        padding: 8px 0;
+        border-bottom: 1px solid #f5f5f5;
+    }
+    
+    .notification-item:last-child {
+        border-bottom: none;
+    }
+</style>
+
 <script>
+    
     document.addEventListener('DOMContentLoaded', function () {
+        // Profile tooltip logic
         var profileImage = document.getElementById('profileImage');
         var profileTooltip = document.getElementById('profileTooltip');
 
@@ -29,10 +125,198 @@
             e.stopPropagation();
         };
 
+        // Notification elements
+        var notificationBell = document.getElementById('notificationBell');
+        var bellTooltip = document.getElementById('bellTooltip');
+        var transactionNotificationBadge = document.getElementById('transactionNotificationBadge');
+        var notificationContent = document.getElementById('notificationContent');
+        var markAllReadBtn = document.getElementById('markAllReadBtn');
+        
+        // Weekly report elements
+        var weeklyReportIcon = document.getElementById('weeklyReportIcon');
+        var reportTooltip = document.getElementById('reportTooltip');
+        var weeklyReportBadge = document.getElementById('weeklyReportBadge');
+        var reportContent = document.getElementById('reportContent');
+        var generateReportBtn = document.getElementById('generateReportBtn');
+
+        // Toggle notification tooltips
+        notificationBell.onclick = function (e) {
+            bellTooltip.classList.toggle('active');
+            reportTooltip.classList.remove('active');
+            profileTooltip.classList.remove('active');
+            e.stopPropagation();
+            loadNotifications();
+        };
+
+        weeklyReportIcon.onclick = function (e) {
+            reportTooltip.classList.toggle('active');
+            bellTooltip.classList.remove('active');
+            profileTooltip.classList.remove('active');
+            e.stopPropagation();
+            loadWeeklyReports();
+        };
+
+        // Close tooltips when clicking elsewhere
         document.addEventListener('click', function (e) {
-            if (e.target !== profileImage) {
+            if (e.target !== notificationBell && e.target !== weeklyReportIcon && e.target !== profileImage) {
+                bellTooltip.classList.remove('active');
+                reportTooltip.classList.remove('active');
                 profileTooltip.classList.remove('active');
             }
         });
+
+        // Mark all as read
+        if (markAllReadBtn) {
+            markAllReadBtn.onclick = function (e) {
+                e.preventDefault();
+                
+                fetch('@Url.Action("MarkAllAsRead", "Notification")', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(function(response) {
+                    return response.json();
+                })
+                .then(function(data) {
+                    if (data.success) {
+                        transactionNotificationBadge.style.display = 'none';
+                        weeklyReportBadge.classList.remove('active');
+                        loadNotifications();
+                        console.log('Wszystkie powiadomienia oznaczone jako przeczytane');
+                    }
+                })
+                .catch(function(error) {
+                    console.error('Błąd:', error);
+                });
+            };
+        }
+
+        // Generate weekly report
+        if (generateReportBtn) {
+            generateReportBtn.onclick = function (e) {
+                e.preventDefault();
+                
+                fetch('@Url.Action("GenerateWeeklyReport", "Notification")', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(function(response) {
+                    return response.json();
+                })
+                .then(function(data) {
+                    if (data.success) {
+                        weeklyReportBadge.classList.add('active');
+                        weeklyReportBadge.innerHTML = '!';
+                        loadWeeklyReports();
+                        console.log('Raport tygodniowy wygenerowany');
+                    }
+                })
+                .catch(function(error) {
+                    console.error('Błąd:', error);
+                });
+            };
+        }
+
+        // Load notifications
+       function loadNotifications() {
+            console.log("Ładowanie powiadomień..."); // DODANE
+
+            fetch('@Url.Action("Index", "Notification")')
+                .then(function(response) {
+                    return response.text();
+                })
+                .then(function(html) {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const notifications = doc.querySelectorAll('.notification-item');
+
+                    console.log("Znalezione powiadomienia:", notifications.length); // DODANE
+
+                    if (notifications.length > 0) {
+                        notificationContent.innerHTML = '';
+                        notifications.forEach(function(notification) {
+                            if (notification.getAttribute('data-type') === '1') {
+                                console.log("Dodano powiadomienie do DOM:", notification); // DODANE
+                                notificationContent.appendChild(notification.cloneNode(true));
+                            }
+                        });
+                    } else {
+                        notificationContent.innerHTML = '<p>Brak powiadomień</p>';
+                    }
+                })
+                .catch(function(error) {
+                    console.error('Błąd ładowania powiadomień:', error);
+                    notificationContent.innerHTML = '<p>Błąd podczas ładowania powiadomień</p>';
+                });
+        }
+
+        // Load weekly reports
+        function loadWeeklyReports() {
+            fetch('@Url.Action("Index", "Notification")')
+                .then(function(response) {
+                    return response.text();
+                })
+                .then(function(html) {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const notifications = doc.querySelectorAll('.notification-item');
+                    
+                    reportContent.innerHTML = '';
+                    let hasReports = false;
+                    
+                    notifications.forEach(function(notification) {
+                        if (notification.getAttribute('data-type') === '2') { // WeeklyReport
+                            reportContent.appendChild(notification.cloneNode(true));
+                            hasReports = true;
+                        }
+                    });
+                    
+                    if (!hasReports) {
+                        reportContent.innerHTML = '<p>Brak dostępnych raportów</p>';
+                    }
+                })
+                .catch(function(error) {
+                    console.error('Błąd ładowania raportów:', error);
+                    reportContent.innerHTML = '<p>Błąd podczas ładowania raportów</p>';
+                });
+        }
+
+        // Check for notifications periodically
+        function checkNotifications() {
+            fetch('@Url.Action("GetUnreadCount", "Notification")')
+                .then(function(response) {
+                    return response.json();
+                })
+                .then(function(data) {
+                    if (data.success) {
+                        if (data.transactionCount > 0) {
+                            transactionNotificationBadge.style.display = 'block';
+                            transactionNotificationBadge.textContent = data.transactionCount > 9 ? '9+' : data.transactionCount;
+                            console.log('Nieprzeczytane powiadomienia: ' + data.transactionCount);
+                        } else {
+                            transactionNotificationBadge.style.display = 'none';
+                        }
+                        
+                        if (data.hasWeeklyReport) {
+                            weeklyReportBadge.classList.add('active');
+                            weeklyReportBadge.innerHTML = '!';
+                            console.log('Dostępny nowy raport tygodniowy');
+                        } else {
+                            weeklyReportBadge.classList.remove('active');
+                        }
+                    }
+                })
+                .catch(function(error) {
+                    console.error('Błąd sprawdzania powiadomień:', error);
+                });
+        }
+
+        // Initial check and set interval
+        checkNotifications();
+        setInterval(checkNotifications, 30000); // Sprawdzaj co 30 sekund
     });
 </script>
