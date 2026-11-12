@@ -1,0 +1,136 @@
+﻿@model IEnumerable<ExpenseTracker.Controllers.CategoryComparisonItem>
+@{
+    ViewData["PageTitle"] = "Porównanie Miesięcy";
+    int diff = ViewBag.ExpenseDiff ?? 0;
+}
+
+<div class="widget p-4 mb-4">
+    <form asp-action="Compare" method="get" class="row g-3 align-items-end">
+        <div class="col-md-4">
+            <label class="form-label fw-bold">Miesiąc bazowy (A)</label>
+            <input type="month" name="month1" value="@ViewBag.Month1Value" class="form-control" />
+        </div>
+        <div class="col-md-4">
+            <label class="form-label fw-bold">Miesiąc porównywany (B)</label>
+            <input type="month" name="month2" value="@ViewBag.Month2Value" class="form-control" />
+        </div>
+        <div class="col-md-4 d-flex gap-2">
+            <button type="submit" class="btn btn-success flex-grow-1">
+                <i class="fa-solid fa-scale-balanced me-1"></i>Porównaj
+            </button>
+            <a href="/Dashboard" class="btn btn-outline-secondary">Wróć</a>
+        </div>
+    </form>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="widget p-4 text-center">
+            <span class="text-muted text-capitalize">Wydatki: @ViewBag.Month1Label</span>
+            <h2 class="fw-bold text-danger mt-2 mb-0">@ViewBag.M1Expense zł</h2>
+            <small class="text-muted">Przychody: @ViewBag.M1Income zł</small>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="widget p-4 text-center">
+            <span class="text-muted text-capitalize">Wydatki: @ViewBag.Month2Label</span>
+            <h2 class="fw-bold text-danger mt-2 mb-0">@ViewBag.M2Expense zł</h2>
+            <small class="text-muted">Przychody: @ViewBag.M2Income zł</small>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="widget p-4 text-center">
+            <span class="text-muted">Różnica wydatków (B względem A)</span>
+            @if (diff > 0)
+            {
+                <h2 class="fw-bold text-danger mt-2 mb-0">+@diff zł 📈</h2>
+                <small class="text-danger">Wydano więcej niż w miesiącu bazowym</small>
+            }
+            else if (diff < 0)
+            {
+                <h2 class="fw-bold text-success mt-2 mb-0">@diff zł 📉</h2>
+                <small class="text-success">Zaoszczędzono względem miesiąca bazowego!</small>
+            }
+            else
+            {
+                <h2 class="fw-bold text-secondary mt-2 mb-0">0 zł</h2>
+                <small class="text-muted">Wydatki na tym samym poziomie</small>
+            }
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="widget p-4">
+            <h5 class="fw-bold text-center mb-3">Porównanie kategorii wydatków</h5>
+            @Html.EJS().Chart("compareChart").Palettes(new string[] { "#6c757d", "#dc3545" }).PrimaryXAxis(px => px
+                        .ValueType(Syncfusion.EJ2.Charts.ValueType.Category)
+                        .LabelStyle(ls => ls.Color("#000"))
+                        ).PrimaryYAxis(py => py
+                        .LabelStyle(ls => ls.Color("#000"))
+                        .Minimum(0)
+                        ).Series(series =>
+                        {
+                            series.Type(Syncfusion.EJ2.Charts.ChartSeriesType.Column)
+                            .XName("CategoryName")
+                            .YName("Month1Amount")
+                            .DataSource(ViewBag.ComparisonData)
+                            .Name((string)ViewBag.Month1Label)
+                            .Add();
+                            series.Type(Syncfusion.EJ2.Charts.ChartSeriesType.Column)
+                            .XName("CategoryName")
+                            .YName("Month2Amount")
+                            .DataSource(ViewBag.ComparisonData)
+                            .Name((string)ViewBag.Month2Label)
+                            .Add();
+                        }).Tooltip(tt => tt.Enable(true)).LegendSettings(lg => lg.Visible(true)).Render()
+        </div>
+    </div>
+</div>
+
+<div class="widget p-4">
+    <h5 class="fw-bold mb-3">Szczegółowe zestawienie zmian</h5>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead>
+                <tr>
+                    <th>Kategoria</th>
+                    <th class="text-end text-capitalize">@ViewBag.Month1Label</th>
+                    <th class="text-end text-capitalize">@ViewBag.Month2Label</th>
+                    <th class="text-end">Zmiana</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Any())
+                {
+                    <tr>
+                        <td colspan="4" class="text-center text-muted py-3">Brak wydatków w wybranych miesiącach.</td>
+                    </tr>
+                }
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td class="fw-bold">@item.CategoryName</td>
+                        <td class="text-end">@item.Month1Amount zł</td>
+                        <td class="text-end">@item.Month2Amount zł</td>
+                        <td class="text-end fw-bold">
+                            @if (item.Difference > 0)
+                            {
+                                <span class="text-danger">+@item.Difference zł (więcej)</span>
+                            }
+                            else if (item.Difference < 0)
+                            {
+                                <span class="text-success">@item.Difference zł (mniej)</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">Bez zmian</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

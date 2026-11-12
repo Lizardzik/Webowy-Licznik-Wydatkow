@@ -1,0 +1,103 @@
+﻿@model IEnumerable<ExpenseTracker.Models.Subscription>
+@{
+    ViewData["PageTitle"] = "Subskrypcje i Stałe Opłaty";
+    ViewData["PageActionText"] = "+ Dodaj Subskrypcję";
+    ViewData["PageActionUrl"] = "/Subscription/AddOrEdit";
+}
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="widget p-4 d-flex align-items-center justify-content-between">
+            <div>
+                <span class="text-muted">Miesięczny koszt stałych opłat</span>
+                <h2 class="fw-bold text-danger mb-0">@ViewBag.TotalMonthlyCost zł</h2>
+            </div>
+            <i class="fa-solid fa-rotate fa-2xl text-danger"></i>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="widget p-4 d-flex align-items-center justify-content-between">
+            <div>
+                <span class="text-muted">Aktywne subskrypcje</span>
+                <h2 class="fw-bold text-success mb-0">@ViewBag.ActiveCount</h2>
+            </div>
+            <form asp-action="ProcessNow" method="post">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-outline-primary btn-sm">
+                    <i class="fa-solid fa-bolt me-1"></i> Sprawdź i rozlicz teraz
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="widget p-4">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Nazwa</th>
+                            <th>Kategoria</th>
+                            <th>Kwota</th>
+                            <th>Dzień pobrania</th>
+                            <th>Następna płatność</th>
+                            <th>Status</th>
+                            <th class="text-end">Akcje</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!Model.Any())
+                        {
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-4">
+                                    Brak dodanych subskrypcji. Dodaj pierwszą (np. Netflix, Spotify, Czynsz), aby aplikacja sama pamiętała o płatnościach!
+                                </td>
+                            </tr>
+                        }
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <td class="fw-bold">@item.Title</td>
+                                <td>@item.CategoryTitleWithIcon</td>
+                                <td class="text-danger fw-bold">-@item.FormattedAmount</td>
+                                <td>@item.BillingDay. dzień miesiąca</td>
+                                <td>@item.NextBillingDate.ToString("dd.MM.yyyy")</td>
+                                <td>
+                                    @if (item.IsActive)
+                                    {
+                                        <span class="badge bg-success">Aktywna</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">Wstrzymana</span>
+                                    }
+                                </td>
+                                <td class="text-end">
+                                    <a href="/Subscription/AddOrEdit/@item.SubscriptionId" class="btn btn-sm btn-outline-secondary me-1">
+                                        <i class="fa-solid fa-pen"></i>
+                                    </a>
+                                    <form asp-action="Delete" asp-route-id="@item.SubscriptionId" method="post" class="d-inline" onsubmit="return confirm('Usunąć tę subskrypcję?');">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                            <i class="fa-solid fa-trash-can"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
