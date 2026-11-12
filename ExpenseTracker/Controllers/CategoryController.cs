@@ -1,16 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using ExpenseTracker.Data;
+﻿using ExpenseTracker.Data;
 using ExpenseTracker.Models;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace ExpenseTracker.Controllers
 {
-    [RequireLogin]
     public class CategoryController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -20,39 +14,39 @@ namespace ExpenseTracker.Controllers
             _context = context;
         }
 
-        // GET: Category
-     
         public async Task<IActionResult> Index()
         {
             return View(await _context.Categories.ToListAsync());
         }
 
-
-        // GET: Category/AddOrEdit
-        public IActionResult AddOrEdit(int id = 0)
+        public async Task<IActionResult> AddOrEdit(int id = 0)
         {
-            if(id == 0)
+            if (id == 0)
             {
                 return View(new Category());
             }
-            else
+
+            Category? category = await _context.Categories.FindAsync(id);
+            if (category == null)
             {
-                return View(_context.Categories.Find(id));
+                return NotFound();
             }
-           
+
+            return View(category);
         }
 
-        // POST: Category/AddOrEdit
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AddOrEdit([Bind("CategoryId,Title,Icon,Type")] Category category)
         {
-            var userNickname = HttpContext.Session.GetString("Nickname");
-            var userId = _context.User.Where(u => u.Nickname == userNickname).Select(u => u.Id).FirstOrDefault();
+            ModelState.Remove("User");
+
             if (ModelState.IsValid)
             {
-                category.UserId = userId;
-                if(category.CategoryId == 0)
+                User user = await _context.GetOrCreateDefaultUserAsync();
+                category.UserId = user.Id;
+
+                if (category.CategoryId == 0)
                 {
                     _context.Add(category);
                 }
@@ -60,30 +54,26 @@ namespace ExpenseTracker.Controllers
                 {
                     _context.Update(category);
                 }
-               
+
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
+
             return View(category);
         }
 
-     
-      
-        // POST: Category/Delete
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var category = await _context.Categories.FindAsync(id);
+            Category? category = await _context.Categories.FindAsync(id);
             if (category != null)
             {
                 _context.Categories.Remove(category);
+                await _context.SaveChangesAsync();
             }
 
-            await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
-
-       
     }
 }

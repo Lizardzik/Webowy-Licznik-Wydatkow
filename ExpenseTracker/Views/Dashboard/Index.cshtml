@@ -1,273 +1,333 @@
-﻿@using Syncfusion.EJ2.Notifications
-@{
-	ViewData["isDashboard"] = true;
-}
+﻿@using System.Globalization
 @model ExpenseTracker.Models.User
+@{
+    ViewData["isDashboard"] = true;
+    CultureInfo culture = CultureInfo.CreateSpecificCulture("pl-PL");
+    culture.NumberFormat.CurrencyNegativePattern = 1;
 
-@*Success message alert*@
+    decimal walletBalance = Model?.WalletBalance ?? 0m;
+    decimal budgetLimit = Model?.MonthlyBudgetLimit ?? 0m;
+    int currentMonthExpense = ViewBag.CurrentMonthExpense ?? 0;
+
+    int budgetPercent = budgetLimit > 0
+        ? (int)Math.Min(100, Math.Round((currentMonthExpense / budgetLimit) * 100))
+        : 0;
+
+    string budgetBarClass = budgetPercent >= 100
+        ? "bg-danger"
+        : budgetPercent >= 80
+            ? "bg-warning"
+            : "bg-success";
+
+    var expenseChartItems = ViewBag.CharData as IEnumerable<object>;
+    bool hasExpenseChartData = expenseChartItems != null && expenseChartItems.Any();
+}
+
 @if (TempData["SuccessMessage"] != null)
 {
     <div class="alert alert-success alert-dismissible fade show d-flex justify-content-center" role="alert">
         @TempData["SuccessMessage"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Zamknij"></button>
     </div>
 }
-
-@*Welcome message alert*@
 
 @if (TempData["WelcomeUser"] != null)
 {
-    <div id="welcome-overlay">
-        @Html.EJS().Message("welcome-message").Severity(Syncfusion.EJ2.Notifications.Severity.Success).Variant(Syncfusion.EJ2.Notifications.Variant.Text).Content("Welcome, " + TempData["WelcomeUser"] + "!").Render()
+    <div id="welcome-banner" class="mb-3">
+        @Html.EJS().Message("welcome-message").Severity(Syncfusion.EJ2.Notifications.Severity.Success).Variant(Syncfusion.EJ2.Notifications.Variant.Filled).Content("Hello " + TempData["WelcomeUser"] + "!").Render()
     </div>
- 
 }
 
-@* Summary Widgets*@
-<div class="row mb-4">
-    <div class="col-md-4">
-        <div class="d-flex flex-row widget summary income-widget" id="incomeWidget">
-            <div class="d-flex flex-column justify-content-center p-5 icon-wrapper">
-                <i class="fa-solid fa-arrow-trend-up fa-2xl"></i>
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+    <div>
+        <h4 class="fw-bold mb-0">Panel finansowy</h4>
+        <small class="text-muted">Podsumowanie Twojego portfela, budżetu i ostatnich operacji</small>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        <a href="/Transaction/AddOrEdit" class="btn btn-success btn-sm">
+            <i class="fa-solid fa-plus me-1"></i>Nowa transakcja
+        </a>
+        <a href="/Scanner" class="btn btn-outline-primary btn-sm">
+            <i class="fa-solid fa-camera me-1"></i>Skaner AI
+        </a>
+        <a href="/Dashboard/Compare" class="btn btn-outline-secondary btn-sm">
+            <i class="fa-solid fa-scale-balanced me-1"></i>Porównaj miesiące
+        </a>
+        <a href="/Subscription" class="btn btn-outline-secondary btn-sm">
+            <i class="fa-solid fa-calendar-check me-1"></i>Subskrypcje
+        </a>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-xl-3 col-md-6">
+        <div class="summary-card">
+            <div class="summary-icon-badge badge-wallet">
+                <i class="fa-solid fa-wallet"></i>
             </div>
-            <div class="d-flex flex-column m-auto py-3 text-wrapper">
-                <span class="lead">Total Income</span>
-                <h1 class="display-6 fw-bold">@ViewBag.Income</h1>
+            <div>
+                <div class="text-muted small">Saldo portfela</div>
+                <div class="fs-4 fw-bold">@walletBalance.ToString("C0", culture)</div>
             </div>
         </div>
     </div>
 
-    <div class="col-md-4">
-        <div class="d-flex flex-row widget summary expense-widget" id="expenseWidget">
-            <div class="d-flex flex-column justify-content-center p-5 icon-wrapper">
-                <i class="fa-solid fa-arrow-trend-down fa-2xl"></i>
+    <div class="col-xl-3 col-md-6">
+        <div class="summary-card" id="incomeWidget" style="cursor: pointer;">
+            <div class="summary-icon-badge badge-income">
+                <i class="fa-solid fa-arrow-trend-up"></i>
             </div>
-            <div class="d-flex flex-column m-auto py-3 text-wrapper">
-                <span class="lead">Total Expenses</span>
-                <h1 class="display-6 fw-bold">@ViewBag.Expense</h1>
+            <div>
+                <div class="text-muted small">Przychody</div>
+                <div class="fs-4 fw-bold">@ViewBag.Income</div>
             </div>
         </div>
     </div>
 
-    <div class="col-md-4">
-        <div class="d-flex flex-row widget summary balance-widget">
-            <div class="d-flex flex-column justify-content-center p-5 icon-wrapper">
-                <i class="fa-solid fa-sack-dollar fa-2xl"></i>
+    <div class="col-xl-3 col-md-6">
+        <div class="summary-card" id="expenseWidget" style="cursor: pointer;">
+            <div class="summary-icon-badge badge-expense">
+                <i class="fa-solid fa-arrow-trend-down"></i>
             </div>
-            <div class="d-flex flex-column m-auto py-3 text-wrapper">
-                <span class="lead">Total Balance</span>
-                <h1 class="display-6 fw-bold">@ViewBag.Balance</h1>
+            <div>
+                <div class="text-muted small">Wydatki</div>
+                <div class="fs-4 fw-bold">@ViewBag.Expense</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="summary-card">
+            <div class="summary-icon-badge badge-balance">
+                <i class="fa-solid fa-sack-dollar"></i>
+            </div>
+            <div>
+                <div class="text-muted small">Bilans transakcji</div>
+                <div class="fs-4 fw-bold">@ViewBag.Balance</div>
             </div>
         </div>
     </div>
 </div>
 
-@* Transaction Modal *@
+<div class="widget p-4 mb-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-2 gap-2">
+        <div>
+            <h6 class="fw-bold mb-0">Miesięczny limit budżetu</h6>
+            @if (budgetLimit > 0)
+            {
+                <small class="text-muted">
+                    Wydano w tym miesiącu: <strong>@currentMonthExpense.ToString("C0", culture)</strong> z <strong>@budgetLimit.ToString("C0", culture)</strong> (@budgetPercent%)
+                </small>
+            }
+            else
+            {
+                <small class="text-muted">Nie ustawiono jeszcze miesięcznego limitu wydatków.</small>
+            }
+        </div>
+        <a href="/Home/User" class="btn btn-sm btn-outline-secondary">
+            <i class="fa-solid fa-sliders me-1"></i>Zmień limit
+        </a>
+    </div>
+
+    @if (budgetLimit > 0)
+    {
+        <div class="progress" style="height: 10px;">
+            <div class="progress-bar @budgetBarClass" role="progressbar" style="width: @budgetPercent%;" aria-valuenow="@budgetPercent" aria-valuemin="0" aria-valuemax="100"></div>
+        </div>
+    }
+</div>
+
 <div class="modal fade" id="transactionModal" tabindex="-1" aria-labelledby="transactionModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="transactionModalLabel">View Transactions</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <h5 class="modal-title" id="transactionModalLabel">Podgląd transakcji</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Zamknij"></button>
             </div>
             <div class="modal-body">
-                <p>Do you want to see all of your transactions?</p>
+                <p class="mb-0">Czy chcesz przejść do listy wszystkich transakcji?</p>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <a href="@Url.Action("Index", "Transaction")" class="btn btn-primary">View Transactions</a>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                <a href="@Url.Action("Index", "Transaction")" class="btn btn-success">Zobacz transakcje</a>
             </div>
         </div>
     </div>
 </div>
-@*Widget Charts*@
-<div class="row mb-4">
+
+<div class="row g-4 mb-4">
     <div class="col-md-4">
-        <div class="widget chart  expense-widget-chart w-100">
-            <div class="title p-4">
-                <h5 class="fw-bold text-center">My Expenses</h5>
-            </div>
+        <div class="widget p-3 w-100 h-100 d-flex flex-column">
+            <h6 class="fw-bold text-center mb-3">Wydatki według kategorii</h6>
+            @if (hasExpenseChartData)
+            {
                 @(
-                    Html.EJS().AccumulationChart("ExpenseChar")
-                        .EnableSmartLabels(true)
-                        .Tooltip(tooltip =>
-                        {
-                            tooltip.Enable(true);
-                            tooltip.Format("${point.x}: ${point.y}");
-                        })
-                        .DataSource((IEnumerable<object>)ViewBag.CharData)
-                        .Series(series =>
-                        {
-                            series.DataLabel(dl => dl.Visible(true)
+                            Html.EJS().AccumulationChart("ExpenseChar")
+                            .Background("transparent")
+                            .EnableSmartLabels(true)
+                            .Tooltip(tooltip =>
+                            {
+                                tooltip.Enable(true);
+                                tooltip.Format("${point.x}: ${point.y} zł");
+                            })
+                            .DataSource(expenseChartItems)
+                            .Series(series =>
+                            {
+                                series.DataLabel(dl => dl.Visible(true)
                             .Position(Syncfusion.EJ2.Charts.AccumulationLabelPosition.Inside)
-                            .Font(ft => ft.FontWeight("600").Color("black"))
+                            .Font(ft => ft.FontWeight("600"))
                             .Name("formattedAmount"))
                             .XName("categoryTitleWithIcon")
                             .YName("amount")
                             .InnerRadius("55%")
-                            .Name("Expense").Border(br => br.Width(1))
+                            .Name("Wydatki")
+                            .Border(br => br.Width(1))
                             .LegendShape(Syncfusion.EJ2.Charts.LegendShape.Circle)
-                            .ExplodeIndex(0).DataSource(ViewBag.CharData).Add();
-                        })
-                        .LegendSettings(legend =>
-                        {
-                            legend.Visible(true);
-                            legend.Position(Syncfusion.EJ2.Charts.LegendPosition.Bottom); 
-                            legend.Width("100%");
-                            legend.TextStyle(style => { style.FontWeight("600").Color("#000"); });
-                            legend.Padding(10);
-                    })
-                    .Render()
-                    )
-            
-            </div>
-        </div>
-    <div class="col-md-8">
-        <div class="widget balance-widget-chart">
-            <div class="title p-4">
-                        <h5 class="fw-bold text-center">Income VS Expense</h5>
-                    </div>
-                @Html.EJS().Chart("container").Palettes(new string[] { "#28a745", "#dc3545" }).PrimaryXAxis(px => px
-                         .ValueType(Syncfusion.EJ2.Charts.ValueType.Category)
-                         .LabelStyle(ls => ls.Color("#000"))
-                         .MajorGridLines(mg => mg.Width(0))
-                         .MajorTickLines(mt => mt.Width(0))
-                         ).PrimaryYAxis(py => py
-                         .LabelStyle(ls => ls.Color("#000"))
-                         .MajorGridLines(mg => mg.Width(1).Color("#32414d").DashArray("3,5"))
-                         .MajorTickLines(mt => mt.Width(0))
-                         .LineStyle(ls => ls.Width(0))
-                         ).ChartArea(ca => ca
-                         .Border(b => b.Width(0))
-                         ).Series(series =>
-                         {
-                             series.Type(Syncfusion.EJ2.Charts.ChartSeriesType.Spline)
-                             .XName("day")
-                             .YName("income")
-                             .DataSource(ViewBag.ChartData)
-                             .Name("Income")
-                             .Width(3)
-                             .Add();
-                             series.Type(Syncfusion.EJ2.Charts.ChartSeriesType.Spline)
-                             .XName("day")
-                             .YName("expense")
-                             .DataSource(ViewBag.ChartData)
-                             .Name("Expense")
-                             .Width(3)
-                             .Add();
-                         }).PrimaryYAxis(axis => axis.Minimum(-1000)).LegendSettings(legend =>
-                         {
-                             legend.Position(Syncfusion.EJ2.Charts.LegendPosition.Bottom)
-                             .EnableHighlight(true)
-                             .Padding(10)
-                             .ToggleVisibility(false)
-                             .TextStyle(ts => ts.Color("#000").Size("1rem"));
-                         }).Tooltip(tt => tt.Enable(true).Format("${point.x}: ${point.y}")).Render()
-           </div>
-      </div>
- </div>
-
-@*Recent transactions and Categories*@
-
-
-<div class="row">
-    <div class="col-md-6">
-        <div class="widget" style="height: 410px !important;">
-            <div class="title p-4">
-                <h5 class="fw-bold text-center">Recently Added Transactions</h5>
-                <hr />
-            </div>
-            <div class="px-4 pb-4">
-                @Html.EJS().Grid("Transactions").DataSource((IEnumerable<object>)ViewBag.RecentTransactions).Columns(col =>
-                         {
-                             col.Field("CategoryTitleWithIcon").HeaderText("Category").TextAlign(Syncfusion.EJ2.Grids.TextAlign.Left).Add();
-                             col.Field("Date").HeaderText("Added On").Width("140").Type("date").Format("dd-MMM-yy").TextAlign(Syncfusion.EJ2.Grids.TextAlign.Center).Add();
-                             col.Field("FormattedAmount").HeaderText("Amount").Width("130").TextAlign(Syncfusion.EJ2.Grids.TextAlign.Center)
-                             .Template("#amountTemplate").Add();
-                         }).GridLines(Syncfusion.EJ2.Grids.GridLine.None).Render()
-            </div>
+                            .ExplodeIndex(0)
+                            .DataSource(expenseChartItems)
+                            .Add();
+                            })
+                            .LegendSettings(legend =>
+                            {
+                                legend.Visible(true);
+                                legend.Position(Syncfusion.EJ2.Charts.LegendPosition.Bottom);
+                                legend.Width("100%");
+                                legend.TextStyle(style => { style.FontWeight("600"); });
+                                legend.Padding(10);
+                            })
+                            .Render()
+                            )
+                        }
+            else
+            {
+                <div class="flex-grow-1 d-flex flex-column justify-content-center align-items-center text-muted py-5">
+                    <i class="fa-solid fa-chart-pie fa-2x mb-2 opacity-50"></i>
+                    <span class="small">Brak wydatków do wyświetlenia</span>
+                </div>
+            }
         </div>
     </div>
+
+    <div class="col-md-8">
+        <div class="widget p-3 h-100">
+            <h6 class="fw-bold text-center mb-3">Przychody i wydatki (ostatnie 7 dni)</h6>
+            @Html.EJS().Chart("container").Background("transparent").Palettes(new string[] { "#28a745", "#dc3545" }).PrimaryXAxis(px => px
+                        .ValueType(Syncfusion.EJ2.Charts.ValueType.Category)
+                        .MajorGridLines(mg => mg.Width(0))
+                        .MajorTickLines(mt => mt.Width(0))
+                        ).PrimaryYAxis(py => py
+                        .Minimum(0)
+                        .MajorGridLines(mg => mg.Width(1).Color("#32414d").DashArray("3,5"))
+                        .MajorTickLines(mt => mt.Width(0))
+                        .LineStyle(ls => ls.Width(0))
+                        ).ChartArea(ca => ca
+                        .Border(b => b.Width(0))
+                        ).Series(series =>
+                        {
+                            series.Type(Syncfusion.EJ2.Charts.ChartSeriesType.Spline)
+                            .XName("day")
+                            .YName("income")
+                            .DataSource(ViewBag.ChartData)
+                            .Name("Przychody")
+                            .Width(3)
+                            .Add();
+                            series.Type(Syncfusion.EJ2.Charts.ChartSeriesType.Spline)
+                            .XName("day")
+                            .YName("expense")
+                            .DataSource(ViewBag.ChartData)
+                            .Name("Wydatki")
+                            .Width(3)
+                            .Add();
+                        }).LegendSettings(legend =>
+                        {
+                            legend.Position(Syncfusion.EJ2.Charts.LegendPosition.Bottom)
+                            .EnableHighlight(true)
+                            .Padding(10)
+                            .ToggleVisibility(false)
+                            .TextStyle(ts => ts.Size("0.9rem"));
+                        }).Tooltip(tt => tt.Enable(true).Format("${point.x}: ${point.y} zł")).Render()
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
     <div class="col-md-6">
-        <div class="widget" style="height: 410px !important;">
-            <div class="title p-4">
-                <h5 class="fw-bold text-center">Recently Added Categories</h5>
-                <hr />
-            </div>
-            <div class="px-4 pb-4">
-                @Html.EJS().Grid("Categories").DataSource((IEnumerable<object>)ViewBag.RecentCategories).Columns(col =>
-                         {
-                             col.Field("TitleWithIcon").HeaderText("Category").TextAlign(Syncfusion.EJ2.Grids.TextAlign.Left).Add();
-                             col.Field("Type").HeaderText("Type").Width("130").TextAlign(Syncfusion.EJ2.Grids.TextAlign.Center)
-                             .Template("#typeTemplate").Add();
-                         }).GridLines(Syncfusion.EJ2.Grids.GridLine.None).Render()
-            </div>
+        <div class="widget p-3 h-100">
+            <h6 class="fw-bold text-center mb-3">Ostatnie transakcje</h6>
+            @Html.EJS().Grid("Transactions").DataSource((IEnumerable<object>)ViewBag.RecentTransactions).Columns(col =>
+                        {
+                col.Field("CategoryTitleWithIcon").HeaderText("Kategoria").TextAlign(Syncfusion.EJ2.Grids.TextAlign.Left).Add();
+                col.Field("Date").HeaderText("Data").Width("125").Type("date").Format("dd.MM.yyyy").TextAlign(Syncfusion.EJ2.Grids.TextAlign.Center).Add();
+                col.Field("FormattedAmount").HeaderText("Kwota").Width("125").TextAlign(Syncfusion.EJ2.Grids.TextAlign.Center)
+                .Template("#amountTemplate").Add();
+            }).GridLines(Syncfusion.EJ2.Grids.GridLine.None).Render()
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="widget p-3 h-100">
+            <h6 class="fw-bold text-center mb-3">Ostatnie kategorie</h6>
+            @Html.EJS().Grid("Categories").DataSource((IEnumerable<object>)ViewBag.RecentCategories).Columns(col =>
+                        {
+                col.Field("TitleWithIcon").HeaderText("Kategoria").TextAlign(Syncfusion.EJ2.Grids.TextAlign.Left).Add();
+                col.Field("Type").HeaderText("Typ").Width("125").TextAlign(Syncfusion.EJ2.Grids.TextAlign.Center)
+                .Template("#typeTemplate").Add();
+            }).GridLines(Syncfusion.EJ2.Grids.GridLine.None).Render()
         </div>
     </div>
 </div>
 
 <script id="amountTemplate" type="text/x-template">
     ${if(CategoryType == "Income")}
-        <span style="color:green">${FormattedAmount}</span>
+        <span class="fw-bold text-success">${FormattedAmount}</span>
     ${else}
-        <span style="color:red">${FormattedAmount}</span>
+        <span class="fw-bold text-danger">${FormattedAmount}</span>
     ${/if}
 </script>
 
 <script id="typeTemplate" type="text/x-template">
     ${if(Type == "Income")}
-        <span class="badge bg-success">${Type}</span>
+        <span class="badge bg-success">Przychód</span>
     ${else}
-        <span class="badge bg-danger">${Type}</span>
+        <span class="badge bg-danger">Wydatek</span>
     ${/if}
 </script>
 
-
-
-
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        // Income and Expense widget click handlers
-        var incomeWidget = document.getElementById('incomeWidget');
-        var expenseWidget = document.getElementById('expenseWidget');
-        var transactionModal = new bootstrap.Modal(document.getElementById('transactionModal'));
-        var loadingElements = document.querySelectorAll('.e-spin-material, .e-spin-bootstrap, .e-spin-fabric, .e-loading');
-        loadingElements.forEach(function (el) {
-            el.style.display = 'none';
-        });
+        const incomeWidget = document.getElementById('incomeWidget');
+        const expenseWidget = document.getElementById('expenseWidget');
+        const modalElement = document.getElementById('transactionModal');
 
-       
+        if (modalElement) {
+            const transactionModal = new bootstrap.Modal(modalElement);
 
-        incomeWidget.addEventListener('click', function() {
-            sessionStorage.setItem('transactionFilter', 'income');
-            document.getElementById('transactionModalLabel').textContent = 'Income Transactions';
-            transactionModal.show();
-        });
+            if (incomeWidget) {
+                incomeWidget.addEventListener('click', function () {
+                    sessionStorage.setItem('transactionFilter', 'income');
+                    document.getElementById('transactionModalLabel').textContent = 'Transakcje przychodowe';
+                    transactionModal.show();
+                });
+            }
 
-        expenseWidget.addEventListener('click', function() {
-            sessionStorage.setItem('transactionFilter', 'expense');
-            document.getElementById('transactionModalLabel').textContent = 'Expense Transactions';
-            transactionModal.show();
-        });
+            if (expenseWidget) {
+                expenseWidget.addEventListener('click', function () {
+                    sessionStorage.setItem('transactionFilter', 'expense');
+                    document.getElementById('transactionModalLabel').textContent = 'Transakcje wydatkowe';
+                    transactionModal.show();
+                });
+            }
+        }
 
-        //Welcome message
-         setTimeout(function() {
-                var welcomeOverlay = document.getElementById('welcome-overlay');
-                if (welcomeOverlay) {
-                    welcomeOverlay.style.animation = 'fadeOut 0.8s';
-                    setTimeout(function() {
-                        welcomeOverlay.style.display = 'none';
-                        
-
-                        // Show loading elements again if needed
-                        loadingElements.forEach(function(el) {
-                            el.style.display = '';
-                        });
-                    }, 800);
-                }
-            }, 2000);
-        });
-
-
+        const welcomeBanner = document.getElementById('welcome-banner');
+        if (welcomeBanner) {
+            setTimeout(function () {
+                welcomeBanner.style.transition = 'opacity 0.5s ease';
+                welcomeBanner.style.opacity = '0';
+                setTimeout(function () {
+                    welcomeBanner.remove();
+                }, 500);
+            }, 4000);
+        }
+    });
 </script>
-

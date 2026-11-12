@@ -1,43 +1,58 @@
 ﻿@model IEnumerable<ExpenseTracker.Models.Category>
 @{
-    ViewData["PageTitle"] = "Categories";
-    ViewData["PageActionText"] = "Add New Category";
+    ViewData["PageTitle"] = "Kategorie";
+    ViewData["PageActionText"] = "+ Nowa kategoria";
     ViewData["PageActionUrl"] = "/Category/AddOrEdit";
+
+    int expenseCount = Model.Count(c => c.Type == "Expense");
+    int incomeCount = Model.Count(c => c.Type == "Income");
 }
 
-<div class="row">
+<div class="row g-4">
     <div class="col-md-7 grid-container">
         @Html.EJS().Grid("Category").DataSource((IEnumerable<object>)Model).Columns(col =>
-                 {
-                     col.Field("TitleWithIcon").HeaderText("Category").TextAlign(Syncfusion.EJ2.Grids.TextAlign.Left).Add();
-                     col.Template("#typeColumnTemplate").HeaderText("Type").Width("130").TextAlign(Syncfusion.EJ2.Grids.TextAlign.Center).Add();
-                     col.Template("#actionColumnTemplate").HeaderText("Actions").Width("120").Add();
-                 }).AllowPaging(true).PageSettings(page => page.PageSize(7)).Render()
+        {
+            col.Field("TitleWithIcon").HeaderText("Kategoria").TextAlign(Syncfusion.EJ2.Grids.TextAlign.Left).Add();
+            col.Template("#typeColumnTemplate").HeaderText("Typ").Width("130").TextAlign(Syncfusion.EJ2.Grids.TextAlign.Center).Add();
+            col.Template("#actionColumnTemplate").HeaderText("Akcje").Width("120").TextAlign(Syncfusion.EJ2.Grids.TextAlign.Center).Add();
+        }).AllowPaging(true).PageSettings(page => page.PageSize(8)).Render()
     </div>
-    <div class="widget col-md-5 d-flex justify-content-center align-items-center">
-        <i class="fa-solid fa-user-secret fa-10x text-info"></i>
+
+    <div class="col-md-5">
+        <div class="widget h-100 p-4 d-flex flex-column justify-content-center align-items-center text-center">
+            <i class="fa-solid fa-layer-group fa-5x text-success mb-3"></i>
+            <h4 class="fw-bold mb-2">Podsumowanie kategorii</h4>
+            <p class="text-muted mb-4">Łącznie zdefiniowanych kategorii: <strong>@Model.Count()</strong></p>
+            <div class="d-flex justify-content-center gap-4 w-100">
+                <div>
+                    <span class="badge bg-danger fs-6 px-3 py-2 mb-1">Wydatki: @expenseCount</span>
+                </div>
+                <div>
+                    <span class="badge bg-success fs-6 px-3 py-2 mb-1">Przychody: @incomeCount</span>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
 <script id="typeColumnTemplate" type="text/x-template">
     ${if(Type=="Income")}
-        <span class="badge bg-success">${Type}</span>
+        <span class="badge bg-success">Przychód</span>
     ${else}
-         <span class="badge bg-danger">${Type}</span>
+        <span class="badge bg-danger">Wydatek</span>
     ${/if}
-    
 </script>
 
 <script id="actionColumnTemplate" type="text/x-template">
-  <div class="d-flex flex-row justify-content-start">
-        <a class="btn btn-sm no-a-decoration" href="/Category/AddOrEdit/${CategoryId}">
-           <i class="fa-solid fa-pen fa-lg text-warning"></i>
-      </a>
-      <form action="/Category/Delete/${CategoryId}" method="POST">
-          @Html.AntiForgeryToken()
-          <button type="submit" class="btn btn-sm btn-link no-a-decoration" onclick="return confirm(&quot;Are you sure to delete this record? &quot;)">
-            <i class="fa-solid fa-trash-can fa-lg text-danger"></i>
-        </button>
-      </form>
-  </div>
+    <div class="d-flex flex-row justify-content-center gap-1">
+        <a class="btn btn-sm no-a-decoration" href="/Category/AddOrEdit/${CategoryId}" title="Edytuj">
+            <i class="fa-solid fa-pen fa-lg text-warning"></i>
+        </a>
+        <form action="/Category/Delete/${CategoryId}" method="POST">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-sm btn-link no-a-decoration" title="Usuń" onclick="return confirm('Czy na pewno chcesz usunąć tę kategorię?')">
+                <i class="fa-solid fa-trash-can fa-lg text-danger"></i>
+            </button>
+        </form>
+    </div>
 </script>

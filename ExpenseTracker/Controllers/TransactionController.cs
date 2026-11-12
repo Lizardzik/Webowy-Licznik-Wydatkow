@@ -1,17 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using ExpenseTracker.Data;
+﻿using ExpenseTracker.Data;
 using ExpenseTracker.Models;
 using ExpenseTracker.Services;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace ExpenseTracker.Controllers
 {
-    [RequireLogin]
     public class TransactionController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -23,90 +17,132 @@ namespace ExpenseTracker.Controllers
             _notificationService = notificationService;
         }
 
-        // GET: Transaction
         public async Task<IActionResult> Index()
         {
-            var userNickname = HttpContext.Session.GetString("Nickname");
-            var userId = _context.User
-                                .Where(u => u.Nickname == userNickname)
-                                .Select(u => u.Id)
-                                .FirstOrDefault();
+            List<Transaction> transactions = await _context.Transactions
+                .Include(t => t.Category)
+                .OrderByDescending(t => t.Date)
+                .ToListAsync();
 
-            var userTransactions = _context.Transactions
-                                            .Where(t => t.UserId == userId)
-                                            .Include(t => t.Category)
-                                            .ToListAsync();
-
-            return View(await userTransactions);
+            return View(transactions);
         }
 
-        // GET: Transaction/AddOrEdit
-        public IActionResult AddOrEdit(int id=0)
+        public async Task<IActionResult> AddOrEdit(int id = 0)
         {
-            PopulateCategories();
+            await PopulateCategoriesAsync();
 
-            if(id == 0)
+            if (id == 0)
             {
-                return View(new Transaction());
+                return View(new Transaction { Date = DateTime.Today });
             }
-            else
+
+            Transaction? transaction = await _context.Transactions.FindAsync(id);
+            if (transaction == null)
             {
-                return View(_context.Transactions.Find(id));
+                return NotFound();
             }
-           
+
+            return View(transaction);
         }
 
-        // POST: Transaction/AddOrEdit
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AddOrEdit([Bind("TransactionId,CategoryId,Amount,Note,Date")] Transaction transaction)
         {
-            var userNickname = HttpContext.Session.GetString("Nickname");
-            var userId = _context.User.Where(u => u.Nickname == userNickname).Select(u => u.Id).FirstOrDefault();
+            ModelState.Remove("Category");
+            ModelState.Remove("User");
 
             if (ModelState.IsValid)
             {
-                transaction.UserId = userId;
+                User user = await _context.GetOrCreateDefaultUserAsync();
+                Category? newCategory = await _context.Categories.FindAsync(transaction.CategoryId);
 
                 if (transaction.TransactionId == 0)
+                {
+                    transaction.UserId = user.Id;
                     _context.Add(transaction);
+
+                    if (newCategory != null)
+                    {
+                        user.WalletBalance += newCategory.Type == "Income"
+                            ? transaction.Amount
+                            : -transaction.Amount;
+                    }
+
+                    await _context.SaveChangesAsync();
+                    await _notificationService.CreateTransactionNotification(transaction);
+                }
                 else
-                    _context.Update(transaction);
+                {
+                    Transaction? existingTransaction = await _context.Transactions
+                        .Include(t => t.Category)
+                        .FirstOrDefaultAsync(t => t.TransactionId == transaction.TransactionId);
 
-                // Najpierw zapisz zmiany
-                await _context.SaveChangesAsync();
+                    if (existingTransaction == null)
+                    {
+                        return NotFound();
+                    }
 
-                // Dopiero potem wyślij powiadomienie
-                await _notificationService.CreateTransactionNotification(transaction);
+                    if (existingTransaction.Category != null)
+                    {
+                        user.WalletBalance -= existingTransaction.Category.Type == "Income"
+                            ? existingTransaction.Amount
+                            : -existingTransaction.Amount;
+                    }
+
+                    existingTransaction.CategoryId = transaction.CategoryId;
+                    existingTransaction.Amount = transaction.Amount;
+                    existingTransaction.Note = transaction.Note;
+                    existingTransaction.Date = transaction.Date;
+                    existingTransaction.UserId = user.Id;
+
+                    if (newCategory != null)
+                    {
+                        user.WalletBalance += newCategory.Type == "Income"
+                            ? transaction.Amount
+                            : -transaction.Amount;
+                    }
+
+                    await _context.SaveChangesAsync();
+                }
 
                 return RedirectToAction(nameof(Index));
             }
 
-            PopulateCategories();
-            ViewData["CategoryId"] = new SelectList(_context.Categories, "Id", "Title", transaction.CategoryId);
+            await PopulateCategoriesAsync();
             return View(transaction);
         }
 
-        // POST: Transaction/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var transaction = await _context.Transactions.FindAsync(id);
+            Transaction? transaction = await _context.Transactions
+                .Include(t => t.Category)
+                .FirstOrDefaultAsync(t => t.TransactionId == id);
+
             if (transaction != null)
             {
+                User user = await _context.GetOrCreateDefaultUserAsync();
+                if (transaction.Category != null)
+                {
+                    user.WalletBalance -= transaction.Category.Type == "Income"
+                        ? transaction.Amount
+                        : -transaction.Amount;
+                }
+
                 _context.Transactions.Remove(transaction);
+                await _context.SaveChangesAsync();
             }
 
-            await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 
-        [NonAction]
-        public void PopulateCategories()
+        private async Task PopulateCategoriesAsync()
         {
-            var CategoryCollection = _context.Categories.ToList();
-            ViewBag.Categories = CategoryCollection;
+            ViewBag.Categories = await _context.Categories
+                .OrderBy(c => c.Title)
+                .ToListAsync();
         }
     }
 }

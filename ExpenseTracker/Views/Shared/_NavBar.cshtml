@@ -1,322 +1,258 @@
-﻿@{
-    var userImage = @Context.Session.GetString("UserImage");
+﻿@using System.Globalization
+@{
+    var userImage = Context.Session.GetString("UserImage");
     var imageUrl = !string.IsNullOrEmpty(userImage) ? userImage : "~/userImage.png";
+    var todayFormatted = DateTime.Now.ToString("dddd, dd MMMM yyyy", new CultureInfo("pl-PL"));
 }
 
-<nav class="navbar sticky-top my-navbar bg-light" id="navbar">
+<nav class="navbar sticky-top my-navbar" id="navbar">
     <div class="container-fluid py-2 px-4">
-        <i class="fa-solid fa-magnifying-glass"></i>
-        <div class="navbar-icons">
+        <div class="d-flex align-items-center gap-3">
+            <button type="button" id="mobile-menu-btn" class="navbar-icon-btn d-md-none" title="Otwórz menu">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+            <div class="d-flex align-items-center text-muted small">
+                <i class="fa-regular fa-calendar me-2 text-success"></i>
+                <span class="text-capitalize fw-medium">@todayFormatted</span>
+            </div>
+        </div>
+
+        <div class="navbar-icons d-flex align-items-center">
+            <button type="button" id="darkModeToggle" class="navbar-icon-btn" title="Przełącz motyw">
+                <i class="fa-solid fa-moon" id="darkModeIcon"></i>
+            </button>
+
             <div class="notification-icon">
-                <i class="fa-solid fa-bell" id="notificationBell"></i>
+                <button type="button" class="navbar-icon-btn" id="notificationBell" title="Powiadomienia">
+                    <i class="fa-solid fa-bell"></i>
+                </button>
                 <span class="notification-badge" id="transactionNotificationBadge"></span>
                 <div class="notification-tooltip" id="bellTooltip">
                     <div class="notification-header">
-                        <h5>Notifications</h5>
-                        <button id="markAllReadBtn" class="btn btn-outline-primary">Mark all as read</button>
-                    </div>  
+                        <h6 class="mb-0 fw-bold">Powiadomienia</h6>
+                        <button type="button" id="markAllReadBtn" class="btn btn-sm btn-outline-success">Oznacz przeczytane</button>
+                    </div>
+                    <div class="notification-content" id="notificationContent">
+                        <p class="text-muted small mb-0">Brak powiadomień</p>
+                    </div>
                 </div>
             </div>
+
             <div class="notification-icon">
-                <i class="fa-solid fa-comment-dots" id="weeklyReportIcon"></i>
+                <button type="button" class="navbar-icon-btn" id="weeklyReportIcon" title="Tygodniowy raport">
+                    <i class="fa-solid fa-comment-dots"></i>
+                </button>
                 <span class="notification-badge report-badge" id="weeklyReportBadge"></span>
                 <div class="notification-tooltip" id="reportTooltip">
                     <div class="notification-header">
-                        <h5>Tygodniowy Raport</h5>
-                        <button id="generateReportBtn" class="btn btn-sm btn-outline-primary">Generuj raport</button>
+                        <h6 class="mb-0 fw-bold">Tygodniowy Raport</h6>
+                        <button type="button" id="generateReportBtn" class="btn btn-sm btn-outline-success">Generuj raport</button>
                     </div>
                     <div class="notification-content" id="reportContent">
-                        <p>Brak dostępnych raportów</p>
+                        <p class="text-muted small mb-0">Brak dostępnych raportów</p>
                     </div>
                 </div>
             </div>
+
             <div class="profile-container">
-                <img src="@Url.Content(imageUrl)" alt="Profile Image" class="profile-pic" id="profileImage" />
+                <img src="@Url.Content(imageUrl)" alt="Zdjęcie profilowe" class="profile-pic" id="profileImage" />
                 <div class="profile-tooltip" id="profileTooltip">
-                    <a href="@Url.Action("User", "Home")">Go to User Settings</a>
+                    <a href="@Url.Action("User", "Home")">Ustawienia profilu</a>
                 </div>
             </div>
         </div>
     </div>
 </nav>
 
-<style>
-    .notification-icon {
-        position: relative;
-        margin-right: 15px;
-        cursor: pointer;
-    }
-    
-    .notification-badge {
-        position: absolute;
-        top: -8px;
-        right: -8px;
-        background-color: #f44336;
-        color: white;
-        border-radius: 50%;
-        min-width: 18px;
-        height: 18px;
-        font-size: 12px;
-        text-align: center;
-        line-height: 18px;
-        display: none;
-    }
-    
-    .report-badge {
-        background-color: #FFC107;
-        display: none;
-    }
-    
-    .report-badge.active {
-        display: block;
-    }
-    
-    .notification-tooltip {
-        position: absolute;
-        top: 100%;
-        right: -100px;
-        width: 300px;
-        background-color: white;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        padding: 10px;
-        z-index: 1000;
-        display: none;
-    }
-    
-    .notification-tooltip.active {
-        display: block;
-    }
-    
-    .notification-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        border-bottom: 1px solid #eee;
-        padding-bottom: 8px;
-        margin-bottom: 8px;
-    }
-    
-    .notification-content {
-        max-height: 300px;
-        overflow-y: auto;
-    }
-    
-    .notification-item {
-        padding: 8px 0;
-        border-bottom: 1px solid #f5f5f5;
-    }
-    
-    .notification-item:last-child {
-        border-bottom: none;
-    }
-</style>
-
 <script>
-    
     document.addEventListener('DOMContentLoaded', function () {
-        // Profile tooltip logic
-        var profileImage = document.getElementById('profileImage');
-        var profileTooltip = document.getElementById('profileTooltip');
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        const darkModeIcon = document.getElementById('darkModeIcon');
+        const syncfusionTheme = document.getElementById('syncfusion-theme');
 
-        profileImage.onclick = function (e) {
-            profileTooltip.classList.toggle('active');
-            e.stopPropagation();
-        };
+        function updateDarkModeIcon(isDark) {
+            if (!darkModeIcon) return;
+            darkModeIcon.className = isDark ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+        }
 
-        // Notification elements
-        var notificationBell = document.getElementById('notificationBell');
-        var bellTooltip = document.getElementById('bellTooltip');
-        var transactionNotificationBadge = document.getElementById('transactionNotificationBadge');
-        var notificationContent = document.getElementById('notificationContent');
-        var markAllReadBtn = document.getElementById('markAllReadBtn');
-        
-        // Weekly report elements
-        var weeklyReportIcon = document.getElementById('weeklyReportIcon');
-        var reportTooltip = document.getElementById('reportTooltip');
-        var weeklyReportBadge = document.getElementById('weeklyReportBadge');
-        var reportContent = document.getElementById('reportContent');
-        var generateReportBtn = document.getElementById('generateReportBtn');
+        updateDarkModeIcon(document.body.classList.contains('dark-mode'));
 
-        // Toggle notification tooltips
-        notificationBell.onclick = function (e) {
-            bellTooltip.classList.toggle('active');
-            reportTooltip.classList.remove('active');
-            profileTooltip.classList.remove('active');
-            e.stopPropagation();
-            loadNotifications();
-        };
+        if (darkModeToggle) {
+            darkModeToggle.onclick = function () {
+                const isDark = document.body.classList.toggle('dark-mode');
+                localStorage.setItem('expenseTracker_darkMode', isDark ? 'true' : 'false');
+                if (syncfusionTheme) {
+                    syncfusionTheme.href = isDark
+                        ? 'https://cdn.syncfusion.com/ej2/25.2.3/fabric-dark.css'
+                        : 'https://cdn.syncfusion.com/ej2/25.2.3/fabric.css';
+                }
+                updateDarkModeIcon(isDark);
+            };
+        }
 
-        weeklyReportIcon.onclick = function (e) {
-            reportTooltip.classList.toggle('active');
-            bellTooltip.classList.remove('active');
-            profileTooltip.classList.remove('active');
-            e.stopPropagation();
-            loadWeeklyReports();
-        };
+        const profileImage = document.getElementById('profileImage');
+        const profileTooltip = document.getElementById('profileTooltip');
 
-        // Close tooltips when clicking elsewhere
+        if (profileImage && profileTooltip) {
+            profileImage.onclick = function (e) {
+                profileTooltip.classList.toggle('active');
+                if (bellTooltip) bellTooltip.classList.remove('active');
+                if (reportTooltip) reportTooltip.classList.remove('active');
+                e.stopPropagation();
+            };
+        }
+
+        const notificationBell = document.getElementById('notificationBell');
+        const bellTooltip = document.getElementById('bellTooltip');
+        const transactionNotificationBadge = document.getElementById('transactionNotificationBadge');
+        const notificationContent = document.getElementById('notificationContent');
+        const markAllReadBtn = document.getElementById('markAllReadBtn');
+
+        const weeklyReportIcon = document.getElementById('weeklyReportIcon');
+        const reportTooltip = document.getElementById('reportTooltip');
+        const weeklyReportBadge = document.getElementById('weeklyReportBadge');
+        const reportContent = document.getElementById('reportContent');
+        const generateReportBtn = document.getElementById('generateReportBtn');
+
+        if (notificationBell && bellTooltip) {
+            notificationBell.onclick = function (e) {
+                bellTooltip.classList.toggle('active');
+                if (reportTooltip) reportTooltip.classList.remove('active');
+                if (profileTooltip) profileTooltip.classList.remove('active');
+                e.stopPropagation();
+                loadNotifications();
+            };
+        }
+
+        if (weeklyReportIcon && reportTooltip) {
+            weeklyReportIcon.onclick = function (e) {
+                reportTooltip.classList.toggle('active');
+                if (bellTooltip) bellTooltip.classList.remove('active');
+                if (profileTooltip) profileTooltip.classList.remove('active');
+                e.stopPropagation();
+                loadWeeklyReports();
+            };
+        }
+
         document.addEventListener('click', function (e) {
-            if (e.target !== notificationBell && e.target !== weeklyReportIcon && e.target !== profileImage) {
+            if (bellTooltip && !bellTooltip.contains(e.target) && !notificationBell.contains(e.target)) {
                 bellTooltip.classList.remove('active');
+            }
+            if (reportTooltip && !reportTooltip.contains(e.target) && !weeklyReportIcon.contains(e.target)) {
                 reportTooltip.classList.remove('active');
+            }
+            if (profileTooltip && !profileTooltip.contains(e.target) && e.target !== profileImage) {
                 profileTooltip.classList.remove('active');
             }
         });
 
-        // Mark all as read
         if (markAllReadBtn) {
             markAllReadBtn.onclick = function (e) {
                 e.preventDefault();
-                
                 fetch('@Url.Action("MarkAllAsRead", "Notification")', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
+                    headers: { 'Content-Type': 'application/json' }
                 })
-                .then(function(response) {
-                    return response.json();
-                })
-                .then(function(data) {
+                .then(response => response.json())
+                .then(data => {
                     if (data.success) {
                         transactionNotificationBadge.style.display = 'none';
                         weeklyReportBadge.classList.remove('active');
                         loadNotifications();
-                        console.log('Wszystkie powiadomienia oznaczone jako przeczytane');
                     }
-                })
-                .catch(function(error) {
-                    console.error('Błąd:', error);
                 });
             };
         }
 
-        // Generate weekly report
         if (generateReportBtn) {
             generateReportBtn.onclick = function (e) {
                 e.preventDefault();
-                
                 fetch('@Url.Action("GenerateWeeklyReport", "Notification")', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
+                    headers: { 'Content-Type': 'application/json' }
                 })
-                .then(function(response) {
-                    return response.json();
-                })
-                .then(function(data) {
+                .then(response => response.json())
+                .then(data => {
                     if (data.success) {
                         weeklyReportBadge.classList.add('active');
-                        weeklyReportBadge.innerHTML = '!';
+                        weeklyReportBadge.textContent = '!';
                         loadWeeklyReports();
-                        console.log('Raport tygodniowy wygenerowany');
                     }
-                })
-                .catch(function(error) {
-                    console.error('Błąd:', error);
                 });
             };
         }
 
-        // Load notifications
-       function loadNotifications() {
-            console.log("Ładowanie powiadomień..."); // DODANE
-
+        function loadNotifications() {
             fetch('@Url.Action("Index", "Notification")')
-                .then(function(response) {
-                    return response.text();
-                })
-                .then(function(html) {
+                .then(response => response.text())
+                .then(html => {
                     const parser = new DOMParser();
                     const doc = parser.parseFromString(html, 'text/html');
                     const notifications = doc.querySelectorAll('.notification-item');
 
-                    console.log("Znalezione powiadomienia:", notifications.length); // DODANE
+                    notificationContent.innerHTML = '';
+                    let hasItems = false;
 
-                    if (notifications.length > 0) {
-                        notificationContent.innerHTML = '';
-                        notifications.forEach(function(notification) {
-                            if (notification.getAttribute('data-type') === '1') {
-                                console.log("Dodano powiadomienie do DOM:", notification); // DODANE
-                                notificationContent.appendChild(notification.cloneNode(true));
-                            }
-                        });
-                    } else {
-                        notificationContent.innerHTML = '<p>Brak powiadomień</p>';
+                    notifications.forEach(function (notification) {
+                        if (notification.getAttribute('data-type') === '1') {
+                            notificationContent.appendChild(notification.cloneNode(true));
+                            hasItems = true;
+                        }
+                    });
+
+                    if (!hasItems) {
+                        notificationContent.innerHTML = '<p class="text-muted small mb-0">Brak powiadomień</p>';
                     }
-                })
-                .catch(function(error) {
-                    console.error('Błąd ładowania powiadomień:', error);
-                    notificationContent.innerHTML = '<p>Błąd podczas ładowania powiadomień</p>';
                 });
         }
 
-        // Load weekly reports
         function loadWeeklyReports() {
             fetch('@Url.Action("Index", "Notification")')
-                .then(function(response) {
-                    return response.text();
-                })
-                .then(function(html) {
+                .then(response => response.text())
+                .then(html => {
                     const parser = new DOMParser();
                     const doc = parser.parseFromString(html, 'text/html');
                     const notifications = doc.querySelectorAll('.notification-item');
-                    
+
                     reportContent.innerHTML = '';
                     let hasReports = false;
-                    
-                    notifications.forEach(function(notification) {
-                        if (notification.getAttribute('data-type') === '2') { // WeeklyReport
+
+                    notifications.forEach(function (notification) {
+                        if (notification.getAttribute('data-type') === '2') {
                             reportContent.appendChild(notification.cloneNode(true));
                             hasReports = true;
                         }
                     });
-                    
+
                     if (!hasReports) {
-                        reportContent.innerHTML = '<p>Brak dostępnych raportów</p>';
+                        reportContent.innerHTML = '<p class="text-muted small mb-0">Brak dostępnych raportów</p>';
                     }
-                })
-                .catch(function(error) {
-                    console.error('Błąd ładowania raportów:', error);
-                    reportContent.innerHTML = '<p>Błąd podczas ładowania raportów</p>';
                 });
         }
 
-        // Check for notifications periodically
         function checkNotifications() {
             fetch('@Url.Action("GetUnreadCount", "Notification")')
-                .then(function(response) {
-                    return response.json();
-                })
-                .then(function(data) {
+                .then(response => response.json())
+                .then(data => {
                     if (data.success) {
                         if (data.transactionCount > 0) {
                             transactionNotificationBadge.style.display = 'block';
                             transactionNotificationBadge.textContent = data.transactionCount > 9 ? '9+' : data.transactionCount;
-                            console.log('Nieprzeczytane powiadomienia: ' + data.transactionCount);
                         } else {
                             transactionNotificationBadge.style.display = 'none';
                         }
-                        
+
                         if (data.hasWeeklyReport) {
                             weeklyReportBadge.classList.add('active');
-                            weeklyReportBadge.innerHTML = '!';
-                            console.log('Dostępny nowy raport tygodniowy');
+                            weeklyReportBadge.textContent = '!';
                         } else {
                             weeklyReportBadge.classList.remove('active');
                         }
                     }
-                })
-                .catch(function(error) {
-                    console.error('Błąd sprawdzania powiadomień:', error);
                 });
         }
 
-        // Initial check and set interval
         checkNotifications();
-        setInterval(checkNotifications, 30000); // Sprawdzaj co 30 sekund
+        setInterval(checkNotifications, 30000);
     });
 </script>

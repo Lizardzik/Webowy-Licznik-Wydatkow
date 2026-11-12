@@ -1,37 +1,63 @@
-﻿@model IEnumerable<ExpenseTracker.Models.Transaction>
-
+﻿@using System.Globalization
+@model IEnumerable<ExpenseTracker.Models.Transaction>
 @{
-    ViewData["PageTitle"] = "Transactions";
-    ViewData["PageActionText"] = "Add New Transaction";
+    ViewData["PageTitle"] = "Transakcje";
+    ViewData["PageActionText"] = "+ Nowa transakcja";
     ViewData["PageActionUrl"] = "/Transaction/AddOrEdit";
+
+    CultureInfo culture = CultureInfo.CreateSpecificCulture("pl-PL");
+    culture.NumberFormat.CurrencyNegativePattern = 1;
+
+    int totalIncome = Model.Where(t => t.Category != null && t.Category.Type == "Income").Sum(t => t.Amount);
+    int totalExpense = Model.Where(t => t.Category != null && t.Category.Type == "Expense").Sum(t => t.Amount);
 }
 
-
-<div class="row">
-    <div class="col-md-7 grid-container">
-        @Html.EJS().Grid("Transcations").DataSource((IEnumerable<object>)Model).Columns(col =>
-                 {
-                     col.Field("CategoryTitleWithIcon").HeaderText("Category").TextAlign(Syncfusion.EJ2.Grids.TextAlign.Left).AllowSorting(false).Add();
-                     col.Field("Date").HeaderText("Date").Width("140").Type("date").Format("dd-MMM-yy").TextAlign(Syncfusion.EJ2.Grids.TextAlign.Center).Add();
-                     col.Field("FormattedAmount").HeaderText("Amount").Width("130").TextAlign(Syncfusion.EJ2.Grids.TextAlign.Center).Add();
-                     col.Template("#actionColumnTemplate").HeaderText("Actions").Width("120").Add();
-                 }).AllowPaging(true).PageSettings(page => page.PageSize(7)).AllowSorting(true).Render()
+<div class="row g-4">
+    <div class="col-lg-8 grid-container">
+        @Html.EJS().Grid("Transactions").DataSource((IEnumerable<object>)Model).Columns(col =>
+        {
+            col.Field("CategoryTitleWithIcon").HeaderText("Kategoria").TextAlign(Syncfusion.EJ2.Grids.TextAlign.Left).Add();
+            col.Field("Note").HeaderText("Notatka").TextAlign(Syncfusion.EJ2.Grids.TextAlign.Left).Add();
+            col.Field("Date").HeaderText("Data").Width("125").Type("date").Format("dd.MM.yyyy").TextAlign(Syncfusion.EJ2.Grids.TextAlign.Center).Add();
+            col.Field("FormattedAmount").HeaderText("Kwota").Width("130").TextAlign(Syncfusion.EJ2.Grids.TextAlign.Center).Add();
+            col.Template("#actionColumnTemplate").HeaderText("Akcje").Width("110").TextAlign(Syncfusion.EJ2.Grids.TextAlign.Center).Add();
+        }).AllowPaging(true).PageSettings(page => page.PageSize(8)).AllowSorting(true).Render()
     </div>
-    <div class="widget col-md-5 d-flex justify-content-center align-items-center">
-        <i class="fa-solid fa-money-bill-trend-up fa-10x text-info"></i>
+
+    <div class="col-lg-4">
+        <div class="widget h-100 p-4 d-flex flex-column justify-content-center align-items-center text-center">
+            <i class="fa-solid fa-money-bill-trend-up fa-5x text-success mb-3"></i>
+            <h4 class="fw-bold mb-2">Historia operacji</h4>
+            <p class="text-muted mb-4">Zarejestrowane transakcje: <strong>@Model.Count()</strong></p>
+
+            <div class="w-100 d-flex flex-column gap-2 mb-4">
+                <div class="d-flex justify-content-between px-3 py-2 rounded border">
+                    <span class="text-muted">Suma przychodów:</span>
+                    <span class="fw-bold text-success">@totalIncome.ToString("C0", culture)</span>
+                </div>
+                <div class="d-flex justify-content-between px-3 py-2 rounded border">
+                    <span class="text-muted">Suma wydatków:</span>
+                    <span class="fw-bold text-danger">@totalExpense.ToString("C0", culture)</span>
+                </div>
+            </div>
+
+            <a href="/Scanner" class="btn btn-outline-primary w-100">
+                <i class="fa-solid fa-camera me-1"></i>Dodaj ze skanera AI
+            </a>
+        </div>
     </div>
 </div>
 
 <script id="actionColumnTemplate" type="text/x-template">
-    <div class="d-flex flex-row justify-content-start">
-          <a class="btn btn-sm no-a-decoration" href="/Transaction/AddOrEdit/${TransactionId}">
-             <i class="fa-solid fa-pen fa-lg text-warning"></i>
+    <div class="d-flex flex-row justify-content-center gap-1">
+        <a class="btn btn-sm no-a-decoration" href="/Transaction/AddOrEdit/${TransactionId}" title="Edytuj">
+            <i class="fa-solid fa-pen fa-lg text-warning"></i>
         </a>
         <form action="/Transaction/Delete/${TransactionId}" method="POST">
-    @Html.AntiForgeryToken()
-            <button type="submit" class="btn btn-sm btn-link no-a-decoration" onclick="return confirm(&quot;Are you sure to delete this record? &quot;)">
-              <i class="fa-solid fa-trash-can fa-lg text-danger"></i>
-          </button>
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-sm btn-link no-a-decoration" title="Usuń" onclick="return confirm('Czy na pewno chcesz usunąć tę transakcję?')">
+                <i class="fa-solid fa-trash-can fa-lg text-danger"></i>
+            </button>
         </form>
     </div>
 </script>

@@ -3,11 +3,9 @@ using ExpenseTracker.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Globalization;
-using System.Transactions;
 
 namespace ExpenseTracker.Controllers
 {
-    [RequireLogin]
     public class DashboardController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -16,87 +14,104 @@ namespace ExpenseTracker.Controllers
         {
             _context = context;
         }
+
         public async Task<ActionResult> Index()
         {
-            //DATA
-            var userNickname = HttpContext.Session.GetString("Nickname");
-            var userId = _context.User.Where(u => u.Nickname == userNickname).Select(u => u.Id).FirstOrDefault();
-            DateTime StartDate = DateTime.Today.AddDays(-7);
-            DateTime EndDate = DateTime.Today;
+            User currentUser = await _context.GetOrCreateDefaultUserAsync();
+            int userId = currentUser.Id;
+
+            DateTime startDate = DateTime.Today.AddDays(-7);
             CultureInfo culture = CultureInfo.CreateSpecificCulture("pl-PL");
             culture.NumberFormat.CurrencyNegativePattern = 1;
 
-            List<Models.Transaction> transactions = await _context.Transactions.Where(t => t.UserId == userId).Include(x => x.Category).ToListAsync();
+            List<Transaction> transactions = await _context.Transactions
+                .Where(t => t.UserId == userId)
+                .Include(x => x.Category)
+                .ToListAsync();
 
-            //Income
-            int Income = transactions.Where(i => i.Category.Type == "Income").Sum(j => j.Amount);
-            ViewBag.Income = Income.ToString("C0");
+            int income = transactions
+                .Where(i => i.Category != null && i.Category.Type == "Income")
+                .Sum(j => j.Amount);
+            ViewBag.Income = income.ToString("C0", culture);
 
-            //Expense
-            int Expense = transactions.Where(i => i.Category.Type == "Expense").Sum(j => j.Amount);
-            ViewBag.Expense = Expense.ToString("C0");
+            int currentMonthExpense = transactions
+                .Where(i => i.Category != null && i.Category.Type == "Expense"
+                            && i.Date.Year == DateTime.Today.Year
+                            && i.Date.Month == DateTime.Today.Month)
+                .Sum(j => j.Amount);
+            ViewBag.CurrentMonthExpense = currentMonthExpense;
 
-            //Balance
-            int Balance = Income - Expense;
-            ViewBag.Balance = Balance.ToString("C0");
+            int expense = transactions
+                .Where(i => i.Category != null && i.Category.Type == "Expense")
+                .Sum(j => j.Amount);
+            ViewBag.Expense = expense.ToString("C0", culture);
 
-            //Chars - Expenses
-            ViewBag.CharData = transactions.Where(i => i.Category.Type == "Expense").GroupBy(j => j.Category.CategoryId).Select(k => new
-            {
-                categoryTitleWithIcon = k.First().Category.Icon+ " " + k.First().Category.Title,
-                amount = k.Sum(j => j.Amount),
-                formattedAmount = k.Sum(j => j.Amount).ToString("C0"),
-            }).OrderByDescending(l => l.amount).ToList();
+            int balance = income - expense;
+            ViewBag.Balance = balance.ToString("C0", culture);
 
-            //Chars - Income VS Expense
+            ViewBag.CharData = transactions
+                .Where(i => i.Category != null && i.Category.Type == "Expense")
+                .GroupBy(j => j.Category!.CategoryId)
+                .Select(k => new
+                {
+                    categoryTitleWithIcon = k.First().Category!.Icon + " " + k.First().Category!.Title,
+                    amount = k.Sum(j => j.Amount),
+                    formattedAmount = k.Sum(j => j.Amount).ToString("C0", culture),
+                })
+                .OrderByDescending(l => l.amount)
+                .ToList();
 
-            //Income
-            List<ChartData> incomeData = transactions.Where(i => i.Category.Type =="Income").GroupBy(j => j.Date).Select(k => new ChartData()
-            {
-                day = k.First().Date.ToString("dd-MMM"),
-                income = k.Sum(l => l.Amount)
-            }).ToList();
+            List<ChartData> incomeData = transactions
+                .Where(i => i.Category != null && i.Category.Type == "Income")
+                .GroupBy(j => j.Date.Date)
+                .Select(k => new ChartData
+                {
+                    day = k.First().Date.ToString("dd-MMM"),
+                    income = k.Sum(l => l.Amount)
+                })
+                .ToList();
 
-            //Expense
-            List<ChartData> expenseData = transactions.Where(i => i.Category.Type =="Expense").GroupBy(j => j.Date).Select(k => new ChartData()
-            {
-                day = k.First().Date.ToString("dd-MMM"),
-                expense = k.Sum(l => l.Amount)
-            }).ToList();
+            List<ChartData> expenseData = transactions
+                .Where(i => i.Category != null && i.Category.Type == "Expense")
+                .GroupBy(j => j.Date.Date)
+                .Select(k => new ChartData
+                {
+                    day = k.First().Date.ToString("dd-MMM"),
+                    expense = k.Sum(l => l.Amount)
+                })
+                .ToList();
 
-            //Combine
-            string[] lastWeek = Enumerable.Range(0, 7).Select(i => StartDate.AddDays(i).ToString("dd-MMM")).ToArray();
+            string[] lastWeek = Enumerable.Range(0, 7)
+                .Select(i => startDate.AddDays(i).ToString("dd-MMM"))
+                .ToArray();
+
             ViewBag.ChartData = from day in lastWeek
-                                join income in incomeData on day equals income.day into dayIncome
-                                from income in dayIncome.DefaultIfEmpty()
-                                join expense in expenseData on day equals expense.day into dayExpense
-                                from expense in dayExpense.DefaultIfEmpty()
+                                join inc in incomeData on day equals inc.day into dayIncome
+                                from inc in dayIncome.DefaultIfEmpty()
+                                join exp in expenseData on day equals exp.day into dayExpense
+                                from exp in dayExpense.DefaultIfEmpty()
                                 select new
                                 {
                                     day = day,
-                                    income = income == null ? 0 : income.income,
-                                    expense = expense == null ? 0 : expense.expense,
+                                    income = inc == null ? 0 : inc.income,
+                                    expense = exp == null ? 0 : exp.expense,
                                 };
 
-
-
-            // Recent Transactions - include CategoryType in the query
             ViewBag.RecentTransactions = await _context.Transactions
                 .Include(i => i.Category)
                 .OrderByDescending(j => j.Date)
                 .Take(5)
                 .Select(t => new
                 {
-                    t.Category.Title,
+                    t.Category!.Title,
                     t.Date,
                     t.Amount,
-                    FormattedAmount = t.Amount.ToString("C0"),
+                    FormattedAmount = t.Amount.ToString("C0", culture),
                     CategoryTitleWithIcon = t.Category.Icon + " " + t.Category.Title,
                     CategoryType = t.Category.Type
                 })
                 .ToListAsync();
 
-            // Recent Categories
             ViewBag.RecentCategories = await _context.Categories
                 .OrderByDescending(i => i.CategoryId)
                 .Take(5)
@@ -107,23 +122,143 @@ namespace ExpenseTracker.Controllers
                 })
                 .ToListAsync();
 
-            //User Actions
-            User user = await _context.User.FirstOrDefaultAsync();
+            ViewBag.RecentUsers = await _context.User
+                .OrderByDescending(i => i.Id)
+                .Take(3)
+                .ToListAsync();
 
-            ViewBag.RecentUsers = await _context.User.OrderByDescending(i => i.Id).Take(3).ToListAsync();
+            HttpContext.Session.SetString("UserImage", currentUser?.DisplayImage ?? string.Empty);
+            if (string.IsNullOrEmpty(HttpContext.Session.GetString("WelcomeShown")))
+            {
+                HttpContext.Session.SetString("WelcomeShown", "true");
+                string displayName = !string.IsNullOrWhiteSpace(currentUser.Nickname)
+                    ? currentUser.Nickname
+                    : !string.IsNullOrWhiteSpace(currentUser.FirstName)
+                        ? currentUser.FirstName
+                        : "Użytkownik";
+                TempData["WelcomeUser"] = displayName;
+            }
+            return View(currentUser);
+        }
 
-         
-            var userImage = _context.User.FirstOrDefault(u => u.Nickname == userNickname)?.DisplayImage;
-            HttpContext.Session.SetString("UserImage", userImage ?? "");
+        [HttpGet]
+        public async Task<IActionResult> Compare(string? month1, string? month2)
+        {
+            DateTime secondMonthDate = ParseMonthOrDefault(month2, new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1));
+            DateTime firstMonthDate = ParseMonthOrDefault(month1, secondMonthDate.AddMonths(-1));
 
-            return View(user);
+            CultureInfo culture = CultureInfo.CreateSpecificCulture("pl-PL");
+
+            List<Transaction> firstMonthTransactions = await _context.Transactions
+                .Include(t => t.Category)
+                .Where(t => t.Date.Year == firstMonthDate.Year && t.Date.Month == firstMonthDate.Month)
+                .ToListAsync();
+
+            List<Transaction> secondMonthTransactions = await _context.Transactions
+                .Include(t => t.Category)
+                .Where(t => t.Date.Year == secondMonthDate.Year && t.Date.Month == secondMonthDate.Month)
+                .ToListAsync();
+
+            int m1Expense = firstMonthTransactions
+                .Where(t => t.Category != null && t.Category.Type == "Expense")
+                .Sum(t => t.Amount);
+
+            int m1Income = firstMonthTransactions
+                .Where(t => t.Category != null && t.Category.Type == "Income")
+                .Sum(t => t.Amount);
+
+            int m2Expense = secondMonthTransactions
+                .Where(t => t.Category != null && t.Category.Type == "Expense")
+                .Sum(t => t.Amount);
+
+            int m2Income = secondMonthTransactions
+                .Where(t => t.Category != null && t.Category.Type == "Income")
+                .Sum(t => t.Amount);
+
+            var allCategories = firstMonthTransactions
+                .Concat(secondMonthTransactions)
+                .Where(t => t.Category != null && t.Category.Type == "Expense")
+                .Select(t => t.Category!)
+                .GroupBy(c => c.CategoryId)
+                .Select(g => g.First())
+                .ToList();
+
+            List<CategoryComparisonItem> comparisonItems = allCategories
+                .Select(category =>
+                {
+                    int amount1 = firstMonthTransactions
+                        .Where(t => t.CategoryId == category.CategoryId && t.Category?.Type == "Expense")
+                        .Sum(t => t.Amount);
+
+                    int amount2 = secondMonthTransactions
+                        .Where(t => t.CategoryId == category.CategoryId && t.Category?.Type == "Expense")
+                        .Sum(t => t.Amount);
+
+                    return new CategoryComparisonItem
+                    {
+                        CategoryName = $"{category.Icon} {category.Title}",
+                        Month1Amount = amount1,
+                        Month2Amount = amount2,
+                        Difference = amount2 - amount1
+                    };
+                })
+                .OrderByDescending(item => item.Month2Amount)
+                .ThenByDescending(item => item.Month1Amount)
+                .ToList();
+
+            ViewBag.Month1Value = firstMonthDate.ToString("yyyy-MM");
+            ViewBag.Month2Value = secondMonthDate.ToString("yyyy-MM");
+            ViewBag.Month1Label = firstMonthDate.ToString("MMMM yyyy", culture);
+            ViewBag.Month2Label = secondMonthDate.ToString("MMMM yyyy", culture);
+            ViewBag.M1Expense = m1Expense;
+            ViewBag.M1Income = m1Income;
+            ViewBag.M2Expense = m2Expense;
+            ViewBag.M2Income = m2Income;
+            ViewBag.ExpenseDiff = m2Expense - m1Expense;
+            ViewBag.ComparisonData = comparisonItems;
+
+            return View(comparisonItems);
+        }
+
+        private async Task<User?> GetCurrentUserAsync()
+        {
+            string? userNickname = HttpContext.Session.GetString("Nickname");
+            if (!string.IsNullOrWhiteSpace(userNickname))
+            {
+                User? sessionUser = await _context.User.FirstOrDefaultAsync(u => u.Nickname == userNickname);
+                if (sessionUser != null)
+                {
+                    return sessionUser;
+                }
+            }
+
+            return await _context.User.OrderBy(u => u.Id).FirstOrDefaultAsync();
+        }
+
+        private static DateTime ParseMonthOrDefault(string? monthInput, DateTime fallback)
+        {
+            if (!string.IsNullOrWhiteSpace(monthInput) &&
+                DateTime.TryParseExact(monthInput + "-01", "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime parsed))
+            {
+                return parsed;
+            }
+
+            return fallback;
         }
     }
 
     public class ChartData
     {
-        public string day;
+        public string day = string.Empty;
         public int income;
         public int expense;
+    }
+
+    public class CategoryComparisonItem
+    {
+        public string CategoryName { get; set; } = string.Empty;
+        public int Month1Amount { get; set; }
+        public int Month2Amount { get; set; }
+        public int Difference { get; set; }
     }
 }

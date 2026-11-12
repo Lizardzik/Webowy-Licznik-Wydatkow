@@ -11,34 +11,40 @@ namespace ExpenseTracker.Models
         [Required(ErrorMessage = "First Name is required")]
         [StringLength(50, ErrorMessage = "First Name cannot be longer than 50 characters")]
         [Column(TypeName = "nvarchar(50)")]
-        public string FirstName { get; set; }
+        public string FirstName { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Last Name is required")]
         [StringLength(50, ErrorMessage = "Last Name cannot be longer than 50 characters")]
         [Column(TypeName = "nvarchar(50)")]
-        public string LastName { get; set; }
+        public string LastName { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "NickName is required")]
         [StringLength(50, ErrorMessage = "Nick Name cannot be longer than 50 characters")]
         [Column(TypeName = "nvarchar(50)")]
-        public string Nickname { get; set; }
+        public string Nickname { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Password is required")]
-        [StringLength(50, MinimumLength = 6, ErrorMessage = "Password is too short")]
-        [Column(TypeName = "nvarchar(50)")]
-        public string Password { get; set; }
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal MonthlyBudgetLimit { get; set; }
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal WalletBalance { get; set; }
 
         public byte[]? ProfileImage { get; set; }
 
-        //OTHER
+        [NotMapped]
+        public string? Password { get; set; }
+
         [NotMapped]
         public string? NewPassword { get; set; }
+
         [NotMapped]
-        public string NicknameLogin { get; set; }
-        [NotMapped] 
-        public string PasswordLogin { get; set; }
+        public string? NicknameLogin { get; set; }
+
         [NotMapped]
-        public string? DisplayImage
+        public string? PasswordLogin { get; set; }
+
+        [NotMapped]
+        public string DisplayImage
         {
             get
             {
@@ -47,7 +53,7 @@ namespace ExpenseTracker.Models
                     string base64String = Convert.ToBase64String(ProfileImage);
                     return $"data:image/jpg;base64,{base64String}";
                 }
-                return string.Empty; 
+                return string.Empty;
             }
         }
     }

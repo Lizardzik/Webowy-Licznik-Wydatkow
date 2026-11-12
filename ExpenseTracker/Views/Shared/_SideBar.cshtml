@@ -1,69 +1,92 @@
 ﻿@{
-    List<Object> menuItems = new List<Object>();
+    string currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? string.Empty;
+    string currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? string.Empty;
 
-    menuItems.Add(new
-    {
-        text = "General",
-        separator = true,
-    });
-    menuItems.Add(new
-    {
-        text = "Dashboard",
-        url = "/Dashboard",
-        iconCss = "fa-solid fa-house-laptop"
-    });
-    menuItems.Add(new
-    {
-        text = "Categories",
-        iconCss = "fa-solid fa-layer-group",
-        items = new List<object>()
-            {
-                new { text = "Display", url = "/Category" },
-                new { separator = true},
-                new { text = "Add" , url ="/Category/AddOrEdit" }
-            }
-    });
-    menuItems.Add(new
-    {
-        text = "Transactions",
-        iconCss = "fa-solid fa-shuffle",
-        items = new List<object>()
-            {
-                new { text = "Display" ,  url = "/Transaction" },
-                new { separator = true},
-                new { text = "Add" , url ="/Transaction/AddOrEdit" }
-            }
-    });
-    menuItems.Add(new
-    {
-        text = "Other",
-        separator = true,
-    });
-    menuItems.Add(new
-    {
-        text = "Settings",
-        url = "/Home/User",
-        iconCss = "fa-solid fa-wrench"
-    });
-    menuItems.Add(new
-    {
-        text = "Log out",
-        url = "/Home/Logout",
-        iconCss = "fa-solid fa-arrow-right-from-bracket"
-    });
-  
+    bool isCategorySection = currentController == "Category";
+    bool isTransactionSection = currentController == "Transaction";
 }
-@{
-    Html.EJS().Sidebar("default-sidebar").Width(250).CloseOnDocumentClick(false).EnableGestures(false).EnableDock(true).DockSize(85).ContentTemplate(
-    @<div class="sidebar-custom">
-        <div class="title-header">
-             <span class="title">Menu </span>
-            <button id="toggle-btn" class="e-btn e-flat e-icon-btn" data-toggle="tooltip" data-placement="right" title="Click to toggle the main menu">
-               <i class="fa-solid fa-angles-left"></i>
-            </button>
-        </div>
-        @Html.EJS().Menu("menu").HamburgerMode(true).ShowItemOnClick(true).Orientation(Syncfusion.EJ2.Navigations.Orientation.Vertical).Items(menuItems).Render()
-    </div>).Render();
 
-  
+@{
+    Html.EJS().Sidebar("default-sidebar")
+        .Width("250px")
+        .MediaQuery("(min-width: 769px)")
+        .CloseOnDocumentClick(false)
+        .EnableGestures(false)
+        .EnableDock(true)
+        .DockSize("85px")
+        .ContentTemplate(
+            @<div class="sidebar-custom">
+    <div class="title-header">
+        <span class="title">Menu</span>
+        <button type="button" id="toggle-btn" class="sidebar-toggle-btn" title="Zwiń lub rozwiń menu">
+            <i class="fa-solid fa-angles-left"></i>
+        </button>
+    </div>
+
+    <nav class="sidebar-nav">
+        <div class="sidebar-section-label">Ogólne</div>
+
+        <a href="/Dashboard" class="sidebar-link @(currentController == "Dashboard" && currentAction == "Index" ? "active" : "")" title="Pulpit">
+            <i class="fa-solid fa-house-laptop"></i>
+            <span class="sidebar-link-text">Pulpit</span>
+        </a>
+
+        <a href="/Dashboard/Compare" class="sidebar-link @(currentController == "Dashboard" && currentAction == "Compare" ? "active" : "")" title="Porównanie miesięcy">
+            <i class="fa-solid fa-scale-balanced"></i>
+            <span class="sidebar-link-text">Porównanie miesięcy</span>
+        </a>
+
+        <a href="/Scanner" class="sidebar-link @(currentController == "Scanner" ? "active" : "")" title="Skaner AI">
+            <i class="fa-solid fa-camera"></i>
+            <span class="sidebar-link-text">Skaner AI</span>
+        </a>
+
+        <a href="/Subscription" class="sidebar-link @(currentController == "Subscription" ? "active" : "")" title="Subskrypcje">
+            <i class="fa-solid fa-calendar-check"></i>
+            <span class="sidebar-link-text">Subskrypcje</span>
+        </a>
+
+        <a href="/Report" class="sidebar-link @(currentController == "Report" ? "active" : "")" title="Raporty PDF">
+            <i class="fa-solid fa-file-pdf"></i>
+            <span class="sidebar-link-text">Raporty PDF</span>
+        </a>
+
+        <div class="sidebar-group">
+            <a href="#categorySubmenu" class="sidebar-link sidebar-parent-toggle @(isCategorySection ? "active" : "")" data-target="#categorySubmenu" aria-expanded="@(isCategorySection ? "true" : "false")" title="Kategorie">
+                <i class="fa-solid fa-layer-group"></i>
+                <span class="sidebar-link-text">Kategorie</span>
+                <i class="fa-solid fa-chevron-down sidebar-caret"></i>
+            </a>
+            <div id="categorySubmenu" class="sidebar-submenu @(isCategorySection ? "show" : "")">
+                <a href="/Category" class="sidebar-sublink @(isCategorySection && currentAction == "Index" ? "active" : "")">Lista</a>
+                <a href="/Category/AddOrEdit" class="sidebar-sublink @(isCategorySection && currentAction == "AddOrEdit" ? "active" : "")">Dodaj</a>
+            </div>
+        </div>
+
+        <div class="sidebar-group">
+            <a href="#transactionSubmenu" class="sidebar-link sidebar-parent-toggle @(isTransactionSection ? "active" : "")" data-target="#transactionSubmenu" aria-expanded="@(isTransactionSection ? "true" : "false")" title="Transakcje">
+                <i class="fa-solid fa-shuffle"></i>
+                <span class="sidebar-link-text">Transakcje</span>
+                <i class="fa-solid fa-chevron-down sidebar-caret"></i>
+            </a>
+            <div id="transactionSubmenu" class="sidebar-submenu @(isTransactionSection ? "show" : "")">
+                <a href="/Transaction" class="sidebar-sublink @(isTransactionSection && currentAction == "Index" ? "active" : "")">Lista</a>
+                <a href="/Transaction/AddOrEdit" class="sidebar-sublink @(isTransactionSection && currentAction == "AddOrEdit" ? "active" : "")">Dodaj</a>
+            </div>
+        </div>
+
+        <div class="sidebar-section-label">Inne</div>
+
+        <a href="/Home/User" class="sidebar-link @(currentController == "Home" && currentAction == "User" ? "active" : "")" title="Ustawienia">
+            <i class="fa-solid fa-wrench"></i>
+            <span class="sidebar-link-text">Ustawienia</span>
+        </a>
+
+        <a href="/Admin" class="sidebar-link @(currentController == "Admin" ? "active" : "")" title="Administracja">
+            <i class="fa-solid fa-database"></i>
+            <span class="sidebar-link-text">Administracja</span>
+        </a>
+    </nav>
+</div>
+        ).Render();
 }

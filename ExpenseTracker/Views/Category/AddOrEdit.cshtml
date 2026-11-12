@@ -1,128 +1,137 @@
 ﻿@model ExpenseTracker.Models.Category
 
 @{
-    Dictionary<string, object> htmlAttributes = new Dictionary<string, object>() {
+    bool isIncome = Model.Type == "Income";
+
+    Dictionary<string, object> htmlAttributes = new Dictionary<string, object>()
+    {
         { "Title", new Dictionary<string, object> { { "name", "Title" } } },
         { "Icon", new Dictionary<string, object> { { "name", "Icon" } } },
         { "Button", new Dictionary<string, object> { { "type", "submit" } } },
-        { "CancelButton", new Dictionary<string, object> { { "type", "button" } } },
+        { "CancelButton", new Dictionary<string, object> { { "type", "button" } } }
     };
 
-
-    var expenseIcons = new string[] {
-        "🛒", "🍔", "🏠", "🚗", "✈️", "🏖️", "🎉", "⚽", "🎨", "📚",
-        "💊", "👕", "🎁", "🍕", "🍦", "📱", "💻", "🔧", "🛠️", "💡"
+    string[] expenseIcons = new string[]
+    {
+        "Zakupy", "Jedzenie", "Dom", "Auto", "Paliwo", "Rachunki",
+        "Zdrowie", "Rozrywka", "Ubrania", "Elektronika", "Prezenty", "Inne"
     };
 
- 
-    var incomeIcons = new string[] {
-        "💰", "💼", "🏦", "📈", "💳", "🎫", "🏆", "💵", "💶", "💷",
-        "💴", "💎", "🤑", "💹", "📊", "🧾", "📑", "📋", "📌", "📍"
+    string[] incomeIcons = new string[]
+    {
+        "Wynagrodzenie", "Premia", "Inwestycje", "Zwrot", "Sprzedaż", "Prezent", "Inne"
     };
 
-    ViewData["PageTitle"] = Model.CategoryId == 0 ? "Create a new category" : "Edit category";
+    ViewData["PageTitle"] = Model.CategoryId == 0 ? "Nowa kategoria" : "Edycja kategorii";
 }
 
-
-<div class="row">
+<div class="row g-4">
     <div class="col-md-7">
-        <div class="widget p-5 @(Model.Type == "Income" ? "income-widget" : "expense-widget")">
-            <form asp-action="AddOrEdit">
-                <div asp-validation-summary="ModelOnly" class="text-danger fs-6"></div>
+        <div class="widget p-4 p-md-5 @(isIncome ? "income-widget" : "expense-widget")">
+            <form asp-action="AddOrEdit" method="post">
+                <div asp-validation-summary="ModelOnly" class="text-danger fs-6 mb-3"></div>
                 <input type="hidden" name="CategoryId" value="@Model.CategoryId" />
-                    <div class="type-toggle-container">
-                        <div class="type-toggle-group">
-                            <div class="toggle-option">
-                                <input type="radio" class="toggle-input" id="expenseType" name="Type" value="Expense" checked="@(Model.Type == "Expense")">
-                                <label for="expenseType" class="toggle-label expense-toggle">
-                                    <i class="fas fa-arrow-circle-down"></i> Expense
-                                </label>
-                            </div>
-                            <div class="toggle-option">
-                                <input type="radio" class="toggle-input" id="incomeType" name="Type" value="Income" checked="@(Model.Type == "Income")">
-                                <label for="incomeType" class="toggle-label income-toggle">
-                                    <i class="fas fa-arrow-circle-up"></i> Income
-                                </label>
-                            </div>
-                        </div>
 
+                <div class="type-toggle-container">
+                    <div class="type-toggle-group">
+                        <div class="toggle-option">
+                            <input type="radio" class="toggle-input" id="expenseType" name="Type" value="Expense" checked="@(!isIncome)">
+                            <label for="expenseType" class="toggle-label expense-toggle">
+                                <i class="fa-solid fa-arrow-circle-down"></i> Wydatek
+                            </label>
+                        </div>
+                        <div class="toggle-option">
+                            <input type="radio" class="toggle-input" id="incomeType" name="Type" value="Income" checked="@(isIncome)">
+                            <label for="incomeType" class="toggle-label income-toggle">
+                                <i class="fa-solid fa-arrow-circle-up"></i> Przychód
+                            </label>
+                        </div>
+                    </div>
                     <span asp-validation-for="Type" class="text-danger fs-6"></span>
                 </div>
- 
+
                 <div class="control-section">
                     <div class="control_wrapper textbox-control-section">
-                        @Html.EJS().TextBox("Title").Value(Model.Title).Placeholder("Title").FloatLabelType(Syncfusion.EJ2.Inputs.FloatLabelType.Always).HtmlAttributes(htmlAttributes["Title"] as IDictionary<string, object>).Render()
+                        @Html.EJS().TextBox("Title").Value(Model.Title).Placeholder("Nazwa kategorii").FloatLabelType(Syncfusion.EJ2.Inputs.FloatLabelType.Always).HtmlAttributes(htmlAttributes["Title"] as IDictionary<string, object>).Render()
                     </div>
                     <span asp-validation-for="Title" class="text-danger fs-6"></span>
                 </div>
-                <div class="control-section mb-3">
+
+                <div class="control-section mb-4">
                     <div class="control_wrapper textbox-control-section">
-                        @Html.EJS().DropDownList("iconSelect").PopupHeight("200px").Value(Model.Icon).Placeholder("Select Icon").HtmlAttributes(htmlAttributes["Icon"] as IDictionary<string, object>).FloatLabelType(Syncfusion.EJ2.Inputs.FloatLabelType.Auto).DataSource(Model.Type == "Income" ? incomeIcons : expenseIcons).Render()
+                        @Html.EJS().DropDownList("iconSelect").PopupHeight("220px").Value(Model.Icon).Placeholder("Wybierz lub wpisz ikonę").HtmlAttributes(htmlAttributes["Icon"] as IDictionary<string, object>).FloatLabelType(Syncfusion.EJ2.Inputs.FloatLabelType.Always).DataSource(isIncome ? incomeIcons : expenseIcons).Render()
                     </div>
                     <span asp-validation-for="Icon" class="text-danger fs-6"></span>
                 </div>
 
-                <div class="control-section mb-3">
-                    @Html.EJS().Button("primarybtn").Content("Submit").CssClass(Model.Type == "Income" ? "e-success" : "e-danger").HtmlAttributes(htmlAttributes["Button"] as IDictionary<string, object>).Render()
-
-                    @Html.EJS().Button("cancelbtn").Content("Cancel").CssClass("e-primary").HtmlAttributes(htmlAttributes["CancelButton"] as IDictionary<string, object>).Render()
+                <div class="d-flex gap-2 w-100">
+                    @Html.EJS().Button("primarybtn").Content("Zapisz").CssClass(isIncome ? "e-success flex-grow-1" : "e-danger flex-grow-1").HtmlAttributes(htmlAttributes["Button"] as IDictionary<string, object>).Render()
+                    @Html.EJS().Button("cancelbtn").Content("Anuluj").CssClass("e-outline").HtmlAttributes(htmlAttributes["CancelButton"] as IDictionary<string, object>).Render()
                 </div>
             </form>
         </div>
     </div>
-    <div class="widget col-md-5 d-flex justify-content-center align-items-center @(Model.Type == "Income" ? "income-widget" : "expense-widget")">
-        <i class="@(Model.Type == "Income" ? "fas fa-money-bill-wave fa-10x text-success" : "fas fa-shopping-cart fa-10x text-danger")"></i>
+
+    <div class="col-md-5">
+        <div class="widget h-100 p-4 d-flex flex-column justify-content-center align-items-center text-center @(isIncome ? "income-widget" : "expense-widget")">
+            <i id="categoryPreviewIcon" class="@(isIncome ? "fa-solid fa-money-bill-wave fa-7x text-success mb-3" : "fa-solid fa-shopping-cart fa-7x text-danger mb-3")"></i>
+            <h5 id="categoryPreviewLabel" class="fw-bold mb-1">@(isIncome ? "Kategoria przychodu" : "Kategoria wydatku")</h5>
+            <p class="text-muted small mb-0">Wybierz typ i ikonę, aby łatwo grupować swoje transakcje.</p>
+        </div>
     </div>
 </div>
 
 @section Scripts {
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Handle radio button changes
-            document.querySelectorAll('input[name="Type"]').forEach(radio => {
-                radio.addEventListener('change', function() {
-                    const isIncome = this.value === "Income";
+        document.addEventListener('DOMContentLoaded', function () {
+            const expenseIcons = @Json.Serialize(expenseIcons);
+            const incomeIcons = @Json.Serialize(incomeIcons);
+            const typeRadios = document.querySelectorAll('input[name="Type"]');
+            const widgets = document.querySelectorAll('.widget');
+            const previewIcon = document.getElementById('categoryPreviewIcon');
+            const previewLabel = document.getElementById('categoryPreviewLabel');
+            const submitButton = document.getElementById('primarybtn');
+            const cancelButton = document.getElementById('cancelbtn');
+            const iconDropdownElement = document.getElementById('iconSelect');
 
-                    // Update widget colors
-                    document.querySelectorAll('.widget').forEach(widget => {
-                        widget.classList.toggle('income-widget', isIncome);
-                        widget.classList.toggle('expense-widget', !isIncome);
+            typeRadios.forEach(function (radio) {
+                radio.addEventListener('change', function () {
+                    const selectedIncome = this.value === 'Income';
+
+                    widgets.forEach(function (widget) {
+                        widget.classList.toggle('income-widget', selectedIncome);
+                        widget.classList.toggle('expense-widget', !selectedIncome);
                     });
 
-                    // Update icon
-                    const icon = document.querySelector('.col-md-5.widget i');
-                    icon.className = isIncome
-                        ? 'fas fa-money-bill-wave fa-10x text-success'
-                        : 'fas fa-shopping-cart fa-10x text-danger';
+                    if (previewIcon) {
+                        previewIcon.className = selectedIncome
+                            ? 'fa-solid fa-money-bill-wave fa-7x text-success mb-3'
+                            : 'fa-solid fa-shopping-cart fa-7x text-danger mb-3';
+                    }
 
-                    // Update button color
-                    const button = document.getElementById('primarybtn');
-                    button.classList.toggle('e-success', isIncome);
-                    button.classList.toggle('e-danger', !isIncome);
+                    if (previewLabel) {
+                        previewLabel.textContent = selectedIncome ? 'Kategoria przychodu' : 'Kategoria wydatku';
+                    }
 
-                    // Update dropdown icons
-                    const dropdown = document.getElementById('iconSelect').ej2_instances[0];
-                    dropdown.dataSource = isIncome ? @Json.Serialize(incomeIcons) : @Json.Serialize(expenseIcons);
-                    dropdown.refresh();
+                    if (submitButton) {
+                        submitButton.classList.toggle('e-success', selectedIncome);
+                        submitButton.classList.toggle('e-danger', !selectedIncome);
+                    }
+
+                    if (iconDropdownElement && iconDropdownElement.ej2_instances) {
+                        const dropdown = iconDropdownElement.ej2_instances[0];
+                        dropdown.dataSource = selectedIncome ? incomeIcons : expenseIcons;
+                        dropdown.value = null;
+                        dropdown.refresh();
+                    }
                 });
             });
-        });
 
-        // Add animation on selection
-        document.querySelectorAll('.btn-toggle').forEach(btn => {
-            btn.addEventListener('click', function () {
-                this.querySelector('i').classList.add('animate__animated', 'animate__bounce');
-                setTimeout(() => {
-                    this.querySelector('i').classList.remove('animate__animated', 'animate__bounce');
-                }, 1000);
-            });
-        });
-
-         document.addEventListener('DOMContentLoaded', function() {
-            // Add click event to Cancel button
-            document.getElementById('cancelbtn').addEventListener('click', function() {
-                window.location.href = '@Url.Action("Index", "Category")';
-            });
+            if (cancelButton) {
+                cancelButton.addEventListener('click', function () {
+                    window.location.href = '@Url.Action("Index", "Category")';
+                });
+            }
         });
     </script>
 }

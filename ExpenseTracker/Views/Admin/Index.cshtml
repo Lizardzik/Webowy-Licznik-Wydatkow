@@ -1,0 +1,114 @@
+﻿@{
+    ViewData["PageTitle"] = "Administracja";
+}
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Zamknij"></button>
+    </div>
+}
+
+<div class="widget p-4">
+    <div class="mb-3">
+        <h5 class="fw-bold mb-1">Zarządzanie kategoriami i kopia zapasowa</h5>
+        <p class="text-muted small mb-0">Szybka konfiguracja kategorii oraz eksport danych z bazy do pliku JSON.</p>
+    </div>
+
+    <div class="d-flex flex-column gap-3">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 p-3 rounded border">
+            <div>
+                <div class="fw-semibold">Edycja i dodawanie kategorii</div>
+                <small class="text-muted">Aktualna liczba kategorii w bazie: <strong>@(ViewBag.CategoriesCount ?? 0)</strong></small>
+            </div>
+            <a href="/Category" class="btn btn-outline-secondary btn-sm">
+                <i class="fa-solid fa-layer-group me-1"></i>Zarządzaj kategoriami
+            </a>
+        </div>
+
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 p-3 rounded border">
+            <div>
+                <div class="fw-semibold">Przywróć domyślne kategorie</div>
+                <small class="text-muted">Uzupełnia podstawowy zestaw kategorii przychodów i wydatków bez usuwania obecnych.</small>
+            </div>
+            <form asp-action="RestoreDefaultCategories" method="post" class="m-0">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-outline-success btn-sm">
+                    <i class="fa-solid fa-rotate-left me-1"></i>Przywróć domyślne
+                </button>
+            </form>
+        </div>
+
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 p-3 rounded border">
+            <div>
+                <div class="fw-semibold">Eksport kopii zapasowej</div>
+                <small class="text-muted">Pobiera wszystkie kategorie, transakcje i subskrypcje w formacie JSON.</small>
+            </div>
+            <a asp-action="ExportDataJson" class="btn btn-outline-primary btn-sm">
+                <i class="fa-solid fa-download me-1"></i>Pobierz JSON
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="widget expense-widget p-4 mt-4">
+    <div class="mb-3">
+        <h5 class="fw-bold text-danger mb-1">Czyszczenie danych</h5>
+        <p class="text-muted small mb-0">Operacje usuwania rekordów z bazy danych są nieodwracalne.</p>
+    </div>
+
+    <div class="d-flex flex-column gap-3">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 p-3 rounded border">
+            <div>
+                <div class="fw-semibold">Wyczyść powiadomienia i raporty</div>
+                <small class="text-muted">Zapisane powiadomienia w bazie: <strong>@(ViewBag.NotificationsCount ?? 0)</strong></small>
+            </div>
+            <form asp-action="ClearNotifications" method="post" class="m-0" onsubmit="return confirm('Czy na pewno chcesz usunąć wszystkie powiadomienia?');">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-outline-danger btn-sm">
+                    <i class="fa-solid fa-bell-slash me-1"></i>Wyczyść powiadomienia
+                </button>
+            </form>
+        </div>
+
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 p-3 rounded border">
+            <div>
+                <div class="fw-semibold">Wyczyść subskrypcje</div>
+                <small class="text-muted">Zapisane płatności cykliczne: <strong>@(ViewBag.SubscriptionsCount ?? 0)</strong></small>
+            </div>
+            <form asp-action="ClearSubscriptions" method="post" class="m-0" onsubmit="return confirm('Czy na pewno chcesz usunąć wszystkie subskrypcje?');">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-outline-danger btn-sm">
+                    <i class="fa-solid fa-calendar-xmark me-1"></i>Wyczyść subskrypcje
+                </button>
+            </form>
+        </div>
+
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 p-3 rounded border">
+            <div>
+                <div class="fw-semibold">Wyczyść historię transakcji</div>
+                <small class="text-muted">Zapisane operacje w bazie: <strong>@(ViewBag.TransactionsCount ?? 0)</strong>. Saldo portfela pozostaje bez zmian.</small>
+            </div>
+            <form asp-action="ClearTransactions" method="post" class="m-0" onsubmit="return confirm('Czy na pewno chcesz usunąć całą historię transakcji?');">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-outline-danger btn-sm">
+                    <i class="fa-solid fa-trash-can me-1"></i>Usuń transakcje
+                </button>
+            </form>
+        </div>
+
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 p-3 rounded border border-danger">
+            <div>
+                <div class="fw-semibold text-danger">Pełny reset aplikacji</div>
+                <small class="text-muted">Usuwa wszystkie transakcje, subskrypcje i powiadomienia, zeruje saldo portfela oraz limit budżetu.</small>
+            </div>
+            <form asp-action="ResetAllData" method="post" class="m-0" onsubmit="return confirm('Uwaga: ta operacja wyzeruje całą aplikację i usunie wszystkie dane. Kontynuować?');">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-danger btn-sm">
+                    <i class="fa-solid fa-triangle-exclamation me-1"></i>Resetuj wszystko
+                </button>
+            </form>
+        </div>
+    </div>
+</div>

@@ -1,32 +1,66 @@
 ﻿document.addEventListener('DOMContentLoaded', function () {
-    //Sidebar toggle 
-    var sidebar = document.getElementById('default-sidebar').ej2_instances[0];
-    var navbar = document.querySelector('.navbar');
-    document.getElementById('toggle-btn').onclick = function () {
+    const sidebarElement = document.getElementById('default-sidebar');
+    const toggleBtn = document.getElementById('toggle-btn');
+    const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+
+    function syncSidebarState(isOpen) {
+        document.body.classList.toggle('sidebar-collapsed', !isOpen);
+        if (!isOpen) {
+            document.querySelectorAll('.sidebar-submenu.show').forEach(function (submenu) {
+                submenu.classList.remove('show');
+            });
+            document.querySelectorAll('.sidebar-parent-toggle').forEach(function (btn) {
+                btn.setAttribute('aria-expanded', 'false');
+            });
+        }
+    }
+
+    function toggleSidebar() {
+        if (!sidebarElement || !sidebarElement.ej2_instances) return;
+        const sidebar = sidebarElement.ej2_instances[0];
         sidebar.toggle();
-        navbar.classList.toggle('shifted');
+        syncSidebarState(sidebar.isOpen);
     }
 
-    //Hide navbar on User's page
-    if (window.location.pathname === '/Home/User') {
-        navbar.style.display = 'none';
+    if (toggleBtn) {
+        toggleBtn.onclick = toggleSidebar;
     }
 
-    //loading gif on dashboard
-    if (window.location.pathname === '/Dashboard' || window.location.pathname === '/Home/User') {   
-        window.addEventListener('load', function () {
+    if (mobileMenuBtn) {
+        mobileMenuBtn.onclick = toggleSidebar;
+    }
 
+    document.querySelectorAll('.sidebar-parent-toggle').forEach(function (parentLink) {
+        parentLink.addEventListener('click', function (e) {
+            e.preventDefault();
+            if (document.body.classList.contains('sidebar-collapsed') && sidebarElement && sidebarElement.ej2_instances) {
+                const sidebar = sidebarElement.ej2_instances[0];
+                sidebar.show();
+                syncSidebarState(true);
+            }
+            const targetSelector = this.getAttribute('data-target');
+            const targetMenu = targetSelector ? document.querySelector(targetSelector) : null;
+            if (targetMenu) {
+                const isExpanded = targetMenu.classList.toggle('show');
+                this.setAttribute('aria-expanded', isExpanded ? 'true' : 'false');
+            }
+        });
+    });
+
+    const loadingOverlay = document.getElementById('loading-overlay');
+    const dashboardContent = document.getElementById('dashboard-content');
+
+    if (loadingOverlay) {
+        setTimeout(function () {
+            loadingOverlay.classList.add('hidden');
+            if (dashboardContent) {
+                dashboardContent.style.display = 'block';
+            }
             setTimeout(function () {
-                var loadingOverlay = document.getElementById('loading-overlay');
-                if (loadingOverlay) {
-                    loadingOverlay.classList.add('hidden');
-                }
-
-                var dashboardContent = document.getElementById('dashboard-content');
-                if (dashboardContent) {
-                    dashboardContent.style.display = 'block';
-                }
-            }, 400); 
-        }, 1000);
-    } 
+                loadingOverlay.style.display = 'none';
+            }, 300);
+        }, 250);
+    } else if (dashboardContent) {
+        dashboardContent.style.display = 'block';
+    }
 });

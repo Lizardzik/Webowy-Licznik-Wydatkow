@@ -14,5 +14,6 @@ namespace ExpenseTracker.Data
         public DbSet<Transaction> Transactions { get; set; }
         public DbSet<User> User { get; set; }
         public DbSet<Notification> Notifications { get; set; }
+        public DbSet<Subscription> Subscriptions { get; set; }
     }
 }
