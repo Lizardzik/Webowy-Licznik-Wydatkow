@@ -29,25 +29,25 @@ namespace ExpenseTracker.Controllers
                 .Include(x => x.Category)
                 .ToListAsync();
 
-            int income = transactions
+            decimal income = transactions
                 .Where(i => i.Category != null && i.Category.Type == "Income")
                 .Sum(j => j.Amount);
-            ViewBag.Income = income.ToString("C0", culture);
+            ViewBag.Income = income.ToString("C2", culture);
 
-            int currentMonthExpense = transactions
+            decimal currentMonthExpense = transactions
                 .Where(i => i.Category != null && i.Category.Type == "Expense"
                             && i.Date.Year == DateTime.Today.Year
                             && i.Date.Month == DateTime.Today.Month)
                 .Sum(j => j.Amount);
             ViewBag.CurrentMonthExpense = currentMonthExpense;
 
-            int expense = transactions
+            decimal expense = transactions
                 .Where(i => i.Category != null && i.Category.Type == "Expense")
                 .Sum(j => j.Amount);
-            ViewBag.Expense = expense.ToString("C0", culture);
+            ViewBag.Expense = expense.ToString("C2", culture);
 
-            int balance = income - expense;
-            ViewBag.Balance = balance.ToString("C0", culture);
+            decimal balance = income - expense;
+            ViewBag.Balance = balance.ToString("C2", culture);
 
             ViewBag.CharData = transactions
                 .Where(i => i.Category != null && i.Category.Type == "Expense")
@@ -56,7 +56,7 @@ namespace ExpenseTracker.Controllers
                 {
                     categoryTitleWithIcon = k.First().Category!.Icon + " " + k.First().Category!.Title,
                     amount = k.Sum(j => j.Amount),
-                    formattedAmount = k.Sum(j => j.Amount).ToString("C0", culture),
+                    formattedAmount = k.Sum(j => j.Amount).ToString("C2", culture),
                 })
                 .OrderByDescending(l => l.amount)
                 .ToList();
@@ -93,8 +93,8 @@ namespace ExpenseTracker.Controllers
                                 select new
                                 {
                                     day = day,
-                                    income = inc == null ? 0 : inc.income,
-                                    expense = exp == null ? 0 : exp.expense,
+                                    income = inc == null ? 0m : inc.income,
+                                    expense = exp == null ? 0m : exp.expense,
                                 };
 
             ViewBag.RecentTransactions = await _context.Transactions
@@ -106,7 +106,7 @@ namespace ExpenseTracker.Controllers
                     t.Category!.Title,
                     t.Date,
                     t.Amount,
-                    FormattedAmount = t.Amount.ToString("C0", culture),
+                    FormattedAmount = t.Amount.ToString("C2", culture),
                     CategoryTitleWithIcon = t.Category.Icon + " " + t.Category.Title,
                     CategoryType = t.Category.Type
                 })
@@ -131,9 +131,9 @@ namespace ExpenseTracker.Controllers
             if (string.IsNullOrEmpty(HttpContext.Session.GetString("WelcomeShown")))
             {
                 HttpContext.Session.SetString("WelcomeShown", "true");
-                string displayName = !string.IsNullOrWhiteSpace(currentUser.Nickname)
+                string displayName = !string.IsNullOrWhiteSpace(currentUser?.Nickname)
                     ? currentUser.Nickname
-                    : !string.IsNullOrWhiteSpace(currentUser.FirstName)
+                    : !string.IsNullOrWhiteSpace(currentUser?.FirstName)
                         ? currentUser.FirstName
                         : "Użytkownik";
                 TempData["WelcomeUser"] = displayName;
@@ -159,19 +159,19 @@ namespace ExpenseTracker.Controllers
                 .Where(t => t.Date.Year == secondMonthDate.Year && t.Date.Month == secondMonthDate.Month)
                 .ToListAsync();
 
-            int m1Expense = firstMonthTransactions
+            decimal m1Expense = firstMonthTransactions
                 .Where(t => t.Category != null && t.Category.Type == "Expense")
                 .Sum(t => t.Amount);
 
-            int m1Income = firstMonthTransactions
+            decimal m1Income = firstMonthTransactions
                 .Where(t => t.Category != null && t.Category.Type == "Income")
                 .Sum(t => t.Amount);
 
-            int m2Expense = secondMonthTransactions
+            decimal m2Expense = secondMonthTransactions
                 .Where(t => t.Category != null && t.Category.Type == "Expense")
                 .Sum(t => t.Amount);
 
-            int m2Income = secondMonthTransactions
+            decimal m2Income = secondMonthTransactions
                 .Where(t => t.Category != null && t.Category.Type == "Income")
                 .Sum(t => t.Amount);
 
@@ -186,11 +186,11 @@ namespace ExpenseTracker.Controllers
             List<CategoryComparisonItem> comparisonItems = allCategories
                 .Select(category =>
                 {
-                    int amount1 = firstMonthTransactions
+                    decimal amount1 = firstMonthTransactions
                         .Where(t => t.CategoryId == category.CategoryId && t.Category?.Type == "Expense")
                         .Sum(t => t.Amount);
 
-                    int amount2 = secondMonthTransactions
+                    decimal amount2 = secondMonthTransactions
                         .Where(t => t.CategoryId == category.CategoryId && t.Category?.Type == "Expense")
                         .Sum(t => t.Amount);
 
@@ -250,15 +250,15 @@ namespace ExpenseTracker.Controllers
     public class ChartData
     {
         public string day = string.Empty;
-        public int income;
-        public int expense;
+        public decimal income;
+        public decimal expense;
     }
 
     public class CategoryComparisonItem
     {
         public string CategoryName { get; set; } = string.Empty;
-        public int Month1Amount { get; set; }
-        public int Month2Amount { get; set; }
-        public int Difference { get; set; }
+        public decimal Month1Amount { get; set; }
+        public decimal Month2Amount { get; set; }
+        public decimal Difference { get; set; }
     }
 }

@@ -3,37 +3,37 @@
     ViewData["PageTitle"] = Model.SubscriptionId == 0 ? "Nowa Subskrypcja" : "Edytuj Subskrypcję";
 }
 
-<div class="row">
+<div class="row g-4">
     <div class="col-md-7">
-        <div class="widget p-5">
+        <div class="widget p-4">
             <form asp-action="AddOrEdit" method="post">
                 @Html.AntiForgeryToken()
-                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
                 <input type="hidden" asp-for="SubscriptionId" />
 
                 <div class="mb-3">
-                    <label class="form-label fw-bold">Nazwa subskrypcji / opłaty</label>
+                    <label asp-for="Title" class="form-label fw-bold">Nazwa subskrypcji / opłaty</label>
                     <input asp-for="Title" class="form-control" placeholder="np. Netflix, Spotify, Czynsz, Siłownia" />
-                    <span asp-validation-for="Title" class="text-danger fs-6"></span>
+                    <span asp-validation-for="Title" class="text-danger small"></span>
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label fw-bold">Kategoria wydatku</label>
-                    @Html.EJS().DropDownListFor(m => m.CategoryId).DataSource((IEnumerable<object>)ViewBag.Categories).Fields(new Syncfusion.EJ2.DropDowns.DropDownListFieldSettings { Value = "CategoryId", Text = "TitleWithIcon" }).Placeholder("Wybierz kategorię").FloatLabelType(Syncfusion.EJ2.Inputs.FloatLabelType.Never).Render()
-                    <span asp-validation-for="CategoryId" class="text-danger fs-6"></span>
+                    <label asp-for="CategoryId" class="form-label fw-bold">Kategoria wydatku</label>
+                    @Html.EJS().DropDownListFor(m => m.CategoryId).DataSource((IEnumerable<object>)ViewBag.Categories).Fields(new Syncfusion.EJ2.DropDowns.DropDownListFieldSettings { Value = "CategoryId", Text = "Title" }).ItemTemplate("<div class='d-flex align-items-center gap-2'><i class='${Icon} text-danger'></i><span>${Title}</span></div>").ValueTemplate("<div class='d-flex align-items-center gap-2'><i class='${Icon} text-danger'></i><span>${Title}</span></div>").Placeholder("Wybierz kategorię").FloatLabelType(Syncfusion.EJ2.Inputs.FloatLabelType.Never).Render()
+                    <span asp-validation-for="CategoryId" class="text-danger small"></span>
                 </div>
 
                 <div class="row">
                     <div class="col-md-6 mb-3">
-                        <label class="form-label fw-bold">Kwota (PLN)</label>
-                        <input asp-for="Amount" type="number" min="1" class="form-control" />
-                        <span asp-validation-for="Amount" class="text-danger fs-6"></span>
+                        <label asp-for="Amount" class="form-label fw-bold">Kwota (PLN)</label>
+                        <input asp-for="Amount" type="text" inputmode="decimal" class="form-control" placeholder="0,00" value="@(Model.Amount == 0 ? string.Empty : Model.Amount.ToString("0.##"))" />
+                        <span asp-validation-for="Amount" class="text-danger small"></span>
                     </div>
 
                     <div class="col-md-6 mb-3">
-                        <label class="form-label fw-bold">Dzień miesiąca (1 - 31)</label>
-                        <input asp-for="BillingDay" type="number" min="1" max="31" class="form-control" />
-                        <span asp-validation-for="BillingDay" class="text-danger fs-6"></span>
+                        <label asp-for="BillingDay" class="form-label fw-bold">Dzień miesiąca (1 - 31)</label>
+                        <input asp-for="BillingDay" type="number" min="1" max="31" inputmode="numeric" class="form-control" />
+                        <span asp-validation-for="BillingDay" class="text-danger small"></span>
                     </div>
                 </div>
 
@@ -42,8 +42,12 @@
                     <label class="form-check-label" asp-for="IsActive">Subskrypcja aktywna (automatycznie pobieraj z portfela)</label>
                 </div>
 
-                <button type="submit" class="btn btn-success px-4">Zapisz subskrypcję</button>
-                <a href="/Subscription" class="btn btn-outline-secondary ms-2">Anuluj</a>
+                <div class="d-flex flex-wrap gap-2">
+                    <button type="submit" class="btn btn-success px-4">
+                        <i class="fa-solid fa-check me-1"></i>Zapisz subskrypcję
+                    </button>
+                    <a href="/Subscription" class="btn btn-outline-secondary">Anuluj</a>
+                </div>
             </form>
         </div>
     </div>
@@ -51,9 +55,15 @@
         <div class="widget h-100 d-flex flex-column justify-content-center align-items-center p-4 text-center">
             <i class="fa-solid fa-calendar-check fa-4x text-success mb-3"></i>
             <h5>Jak działają subskrypcje?</h5>
-            <p class="text-muted small">
+            <p class="text-muted small mb-0">
                 Wskazujesz dzień miesiąca, w którym opłata schodzi z konta. Aplikacja przypomni Ci o niej 3 dni wcześniej, a w dniu płatności sama utworzy transakcję i pomniejszy stan Twojego portfela.
             </p>
         </div>
     </div>
 </div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

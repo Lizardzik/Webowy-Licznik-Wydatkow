@@ -1,11 +1,21 @@
-﻿@{
+﻿@using System.Globalization
+@model dynamic
+@{
     ViewData["PageTitle"] = "Raport Finansowy i Diagnoza";
+    ViewData["UseLoader"] = true;
+    CultureInfo culture = CultureInfo.CreateSpecificCulture("pl-PL");
+
     var insights = ViewBag.Insights as List<ExpenseTracker.Controllers.FinancialInsight> ?? new();
     var categories = ViewBag.CategoryBreakdown as List<ExpenseTracker.Controllers.ReportCategoryItem> ?? new();
     var topExpenses = ViewBag.TopExpenses as List<ExpenseTracker.Models.Transaction> ?? new();
+
+    decimal walletBalance = ViewBag.WalletBalance != null ? (decimal)ViewBag.WalletBalance : 0m;
+    decimal totalIncome = ViewBag.TotalIncome != null ? (decimal)ViewBag.TotalIncome : 0m;
+    decimal totalExpense = ViewBag.TotalExpense != null ? (decimal)ViewBag.TotalExpense : 0m;
+    decimal balance = ViewBag.Balance != null ? (decimal)ViewBag.Balance : 0m;
+    decimal prevTotalExpense = ViewBag.PrevTotalExpense != null ? (decimal)ViewBag.PrevTotalExpense : 0m;
 }
 
-@* Pasek wyboru dat i przycisk generowania PDF (ukrywany na wydruku PDF) *@
 <div class="widget p-4 mb-4 no-print">
     <div class="row g-3 align-items-end">
         <div class="col-md-8">
@@ -26,56 +36,53 @@
             </form>
         </div>
         <div class="col-md-4 text-md-end">
-            <button type="button" onclick="window.print()" class="btn btn-danger px-4 py-2 fw-bold">
+            <button type="button" onclick="window.print()" class="btn btn-danger px-4 py-2 fw-bold w-100 w-md-auto">
                 <i class="fa-solid fa-file-pdf me-2"></i>Pobierz / Zapisz PDF
             </button>
         </div>
     </div>
 </div>
 
-@* Nagłówek widoczny na wygenerowanym PDF *@
 <div class="print-only mb-4 border-bottom pb-3">
     <div class="d-flex justify-content-between align-items-center">
         <div>
-            <h2 class="fw-bold mb-1">Raport Finansowy – Moje Finanse</h2>
+            <h2 class="fw-bold mb-1">Raport Finansowy</h2>
             <p class="text-muted mb-0">Analizowany okres: <strong>@ViewBag.PeriodDisplay</strong> (w odniesieniu do: @ViewBag.PrevPeriodDisplay)</p>
         </div>
         <div class="text-end">
             <span class="small text-muted">Wygenerowano: @DateTime.Now.ToString("dd.MM.yyyy HH:mm")</span>
-            <h5 class="fw-bold text-success mb-0">Stan portfela: @ViewBag.WalletBalance.ToString("N2") zł</h5>
+            <h5 class="fw-bold text-success mb-0">Stan portfela: @walletBalance.ToString("N2", culture) zł</h5>
         </div>
     </div>
 </div>
 
-@* Podsumowanie liczbowe *@
-<div class="row mb-4">
-    <div class="col-md-3 col-6 mb-2">
-        <div class="widget p-3 text-center">
+<div class="row g-3 mb-4">
+    <div class="col-md-3 col-6">
+        <div class="widget p-3 text-center h-100">
             <span class="text-muted small">Przychody</span>
-            <h3 class="fw-bold text-success mb-0">@ViewBag.TotalIncome.ToString("N0") zł</h3>
+            <h4 class="fw-bold text-success mt-1 mb-0">@totalIncome.ToString("N2", culture) zł</h4>
         </div>
     </div>
-    <div class="col-md-3 col-6 mb-2">
-        <div class="widget p-3 text-center">
+    <div class="col-md-3 col-6">
+        <div class="widget p-3 text-center h-100">
             <span class="text-muted small">Wydatki</span>
-            <h3 class="fw-bold text-danger mb-0">@ViewBag.TotalExpense.ToString("N0") zł</h3>
+            <h4 class="fw-bold text-danger mt-1 mb-0">@totalExpense.ToString("N2", culture) zł</h4>
         </div>
     </div>
-    <div class="col-md-3 col-6 mb-2">
-        <div class="widget p-3 text-center">
+    <div class="col-md-3 col-6">
+        <div class="widget p-3 text-center h-100">
             <span class="text-muted small">Bilans okresu</span>
-            <h3 class="fw-bold @(ViewBag.Balance >= 0 ? "text-success" : "text-danger") mb-0">@ViewBag.Balance.ToString("N0") zł</h3>
+            <h4 class="fw-bold @(balance >= 0 ? "text-success" : "text-danger") mt-1 mb-0">@balance.ToString("N2", culture) zł</h4>
         </div>
     </div>
-    <div class="col-md-3 col-6 mb-2">
-        <div class="widget p-3 text-center">
-            <span class="text-muted small">Poprzedni okres (wydatki)</span>
-            <h3 class="fw-bold text-secondary mb-0">@ViewBag.PrevTotalExpense.ToString("N0") zł</h3>
+    <div class="col-md-3 col-6">
+        <div class="widget p-3 text-center h-100">
+            <span class="text-muted small">Poprzedni okres</span>
+            <h4 class="fw-bold text-secondary mt-1 mb-0">@prevTotalExpense.ToString("N2", culture) zł</h4>
         </div>
     </div>
 </div>
 
-@* Sekcja: Diagnoza problemów i wnioski *@
 <div class="widget p-4 mb-4">
     <h5 class="fw-bold mb-3"><i class="fa-solid fa-stethoscope text-danger me-2"></i>Diagnoza finansowa i wykryte problemy</h5>
     <div class="row g-3">
@@ -95,7 +102,7 @@
                 <div class="p-3 rounded border-start border-4 @borderClass h-100">
                     <div class="d-flex align-items-center mb-1">
                         <i class="fa-solid @iconClass me-2"></i>
-                        <strong class="text-dark">@item.Title</strong>
+                        <strong>@item.Title</strong>
                     </div>
                     <p class="small text-muted mb-0">@item.Description</p>
                 </div>
@@ -104,7 +111,6 @@
     </div>
 </div>
 
-@* Wykresy porównawcze *@
 @if (!categories.Any())
 {
     <div class="widget p-5 mb-4 text-center">
@@ -115,11 +121,11 @@
 }
 else
 {
-    <div class="row mb-4">
+    <div class="row g-4 mb-4">
         <div class="col-md-5">
             <div class="widget p-4 h-100">
                 <h6 class="fw-bold text-center mb-3">Udział kategorii w wydatkach</h6>
-                @Html.EJS().AccumulationChart("reportPieChart").Height("320px").EnableSmartLabels(true).Series(series =>
+                @Html.EJS().AccumulationChart("reportPieChart").Background("transparent").Height("320px").EnableSmartLabels(true).Series(series =>
                 {
                     series.DataLabel(dl => dl.Visible(true).Name("CategoryTitle").Position(Syncfusion.EJ2.Charts.AccumulationLabelPosition.Inside))
                     .XName("CategoryTitle")
@@ -133,7 +139,7 @@ else
                                                                                                                                              <div class="col-md-7">
                                                                                                                                                  <div class="widget p-4 h-100">
                                                                                                                                                      <h6 class="fw-bold text-center mb-3">Obecny okres vs Poprzedni okres</h6>
-                                                                                                                                                     @Html.EJS().Chart("reportBarChart").Height("320px").Palettes(new string[] { "#dc3545", "#adb5bd" }).PrimaryXAxis(px => px
+                                                                                                                                                     @Html.EJS().Chart("reportBarChart").Background("transparent").Height("320px").Palettes(new string[] { "#dc3545", "#adb5bd" }).PrimaryXAxis(px => px
                 .ValueType(Syncfusion.EJ2.Charts.ValueType.Category)
                         ).PrimaryYAxis(py => py.Minimum(0)).Series(series =>
                         {
@@ -154,90 +160,100 @@ else
     </div>
 </div>
 }
-@* Szczegółowa tabela kategorii oraz największe pojedyncze wydatki *@
-<div class="row">
-    <div class="col-md-7 mb-4">
+
+<div class="row g-4">
+    <div class="col-md-7">
         <div class="widget p-4 h-100">
             <h6 class="fw-bold mb-3">Zestawienie wydatków według kategorii</h6>
-            <table class="table table-sm align-middle">
-                <thead>
-                    <tr>
-                        <th>Kategoria</th>
-                        <th class="text-center">Liczba operacji</th>
-                        <th class="text-end">Kwota</th>
-                        <th class="text-end">Udział</th>
-                        <th class="text-end">Zmiana</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (!categories.Any())
-                    {
+            <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                    <thead>
                         <tr>
-                            <td colspan="5" class="text-center text-muted py-3">Brak wydatków w wybranym okresie.</td>
+                            <th>Kategoria</th>
+                            <th class="text-center">Operacje</th>
+                            <th class="text-end">Kwota</th>
+                            <th class="text-end">Udział</th>
+                            <th class="text-end">Zmiana</th>
                         </tr>
-                    }
-                    @foreach (var c in categories)
-                    {
-                        <tr>
-                            <td class="fw-bold">@c.CategoryTitle</td>
-                            <td class="text-center">@c.TransactionsCount</td>
-                            <td class="text-end fw-bold">@c.Amount.ToString("N0") zł</td>
-                            <td class="text-end">@c.SharePercentage%</td>
-                            <td class="text-end">
-                                @if (c.Difference > 0)
-                                {
-                                    <span class="text-danger">+@c.Difference.ToString("N0") zł</span>
-                                }
-                                else if (c.Difference < 0)
-                                {
-                                    <span class="text-success">@c.Difference.ToString("N0") zł</span>
-                                }
-                                else
-                                {
-                                    <span class="text-muted">0 zł</span>
-                                }
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @if (!categories.Any())
+                        {
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-3">Brak wydatków w wybranym okresie.</td>
+                            </tr>
+                        }
+                        @foreach (var c in categories)
+                        {
+                            <tr>
+                                <td class="fw-bold">@c.CategoryTitle</td>
+                                <td class="text-center">@c.TransactionsCount</td>
+                                <td class="text-end fw-bold">@c.Amount.ToString("N2", culture) zł</td>
+                                <td class="text-end">@c.SharePercentage%</td>
+                                <td class="text-end">
+                                    @if (c.Difference > 0)
+                                    {
+                                        <span class="text-danger">+@c.Difference.ToString("N2", culture) zł</span>
+                                    }
+                                    else if (c.Difference < 0)
+                                    {
+                                        <span class="text-success">@c.Difference.ToString("N2", culture) zł</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">0,00 zł</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 
-    <div class="col-md-5 mb-4">
+    <div class="col-md-5">
         <div class="widget p-4 h-100">
             <h6 class="fw-bold mb-3">10 największych wydatków w okresie</h6>
-            <table class="table table-sm align-middle">
-                <thead>
-                    <tr>
-                        <th>Data</th>
-                        <th>Kategoria / Opis</th>
-                        <th class="text-end">Kwota</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (!topExpenses.Any())
-                    {
+            <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                    <thead>
                         <tr>
-                            <td colspan="3" class="text-center text-muted py-3">Brak transakcji.</td>
+                            <th>Data</th>
+                            <th>Kategoria / Opis</th>
+                            <th class="text-end">Kwota</th>
                         </tr>
-                    }
-                    @foreach (var t in topExpenses)
-                    {
-                        <tr>
-                            <td class="small text-muted">@t.Date.ToString("dd.MM.yyyy")</td>
-                            <td>
-                                <div class="fw-bold small">@t.Category?.TitleWithIcon</div>
-                                @if (!string.IsNullOrEmpty(t.Note))
-                                {
-                                    <div class="text-muted" style="font-size: 0.78rem;">@t.Note</div>
-                                }
-                            </td>
-                            <td class="text-end text-danger fw-bold">-@t.Amount.ToString("N0") zł</td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @if (!topExpenses.Any())
+                        {
+                            <tr>
+                                <td colspan="3" class="text-center text-muted py-3">Brak transakcji.</td>
+                            </tr>
+                        }
+                        @foreach (var t in topExpenses)
+                        {
+                            <tr>
+                                <td class="small text-muted">@t.Date.ToString("dd.MM.yyyy")</td>
+                                <td>
+                                    @if (t.Category != null)
+                                    {
+                                        <div class="fw-bold small d-flex align-items-center gap-1">
+                                            <i class="@t.Category.Icon text-danger"></i>
+                                            <span>@t.Category.Title</span>
+                                        </div>
+                                    }
+                                    @if (!string.IsNullOrEmpty(t.Note))
+                                    {
+                                        <div class="text-muted" style="font-size: 0.78rem;">@t.Note</div>
+                                    }
+                                </td>
+                                <td class="text-end text-danger fw-bold">-@t.Amount.ToString("N2", culture) zł</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
@@ -254,7 +270,7 @@ else
         }
 
         #default-sidebar,
-        #navbar,
+        .my-navbar,
         .no-print,
         .e-breadcrumb {
             display: none !important;
@@ -264,13 +280,6 @@ else
             margin-left: 0 !important;
             padding: 0 !important;
             width: 100% !important;
-        }
-
-        .container {
-            max-width: 100% !important;
-            width: 100% !important;
-            margin: 0 !important;
-            padding: 0 !important;
         }
 
         .widget {

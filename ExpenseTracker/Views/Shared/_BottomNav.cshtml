@@ -1,0 +1,31 @@
+﻿@{
+    string currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? string.Empty;
+    string currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? string.Empty;
+}
+
+<nav class="mobile-bottom-nav" aria-label="Nawigacja mobilna">
+    <a href="/Dashboard" class="mobile-nav-item @(currentController == "Dashboard" && currentAction == "Index" ? "active" : "")">
+        <i class="fa-solid fa-house-laptop"></i>
+        <span>Pulpit</span>
+    </a>
+
+    <a href="/Transaction" class="mobile-nav-item @(currentController == "Transaction" && currentAction == "Index" ? "active" : "")">
+        <i class="fa-solid fa-shuffle"></i>
+        <span>Operacje</span>
+    </a>
+
+    <a href="/Transaction/AddOrEdit" class="mobile-nav-item mobile-nav-add" title="Dodaj transakcję">
+        <i class="fa-solid fa-plus"></i>
+        <span>Dodaj</span>
+    </a>
+
+    <a href="/Scanner" class="mobile-nav-item @(currentController == "Scanner" ? "active" : "")">
+        <i class="fa-solid fa-camera"></i>
+        <span>Skaner</span>
+    </a>
+
+    <a href="/Subscription" class="mobile-nav-item @(currentController == "Subscription" ? "active" : "")">
+        <i class="fa-solid fa-calendar-check"></i>
+        <span>Subskrypcje</span>
+    </a>
+</nav>

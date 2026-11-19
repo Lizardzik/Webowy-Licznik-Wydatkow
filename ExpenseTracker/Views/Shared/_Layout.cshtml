@@ -1,6 +1,8 @@
-﻿@{
+﻿@using System.Globalization
+@{
     bool isDashboardPage = ViewData["isDashboard"] != null;
     bool isUserPage = ViewData["isUserPage"] != null;
+    bool showPageLoader = isDashboardPage || isUserPage || (ViewData["UseLoader"] as bool? == true);
 
     var items = new List<Syncfusion.EJ2.Navigations.BreadcrumbItem>();
     items.Add(new Syncfusion.EJ2.Navigations.BreadcrumbItem
@@ -64,56 +66,63 @@
 <html lang="pl">
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Expense Tracker</title>
+    <meta name="theme-color" content="#161b22" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Expense Tracker" />
+    <link rel="manifest" href="~/manifest.json" />
+    <link rel="icon" type="image/png" href="~/icons/icon-192.png" />
+    <link rel="apple-touch-icon" href="~/icons/apple-touch-icon.png" />
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link id="syncfusion-theme" rel="stylesheet" href="https://cdn.syncfusion.com/ej2/25.2.3/fabric.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="~/css/theme.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/site-mobile.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/ExpenseTracker.styles.css" asp-append-version="true" />
+    <script>
+        window.__pageLoadStartTime = performance.now();
+        if (localStorage.getItem('expenseTracker_darkMode') === 'true') {
+            document.documentElement.classList.add('dark-mode');
+            const themeLink = document.getElementById('syncfusion-theme');
+            if (themeLink) {
+                themeLink.href = 'https://cdn.syncfusion.com/ej2/25.2.3/fabric-dark.css';
+            }
+        }
+    </script>
     <script src="https://cdn.syncfusion.com/ej2/25.2.3/dist/ej2.min.js"></script>
+    <script src="~/js/navbar.js" asp-append-version="true"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
 </head>
 
-<body>
+<body class="@(showPageLoader ? "page-is-loading" : "")">
     <script>
-        (function () {
-            if (localStorage.getItem('expenseTracker_darkMode') === 'true') {
-                document.body.classList.add('dark-mode');
-                const themeLink = document.getElementById('syncfusion-theme');
-                if (themeLink) {
-                    themeLink.href = 'https://cdn.syncfusion.com/ej2/25.2.3/fabric-dark.css';
-                }
-            }
-        })();
+        if (localStorage.getItem('expenseTracker_darkMode') === 'true') {
+            document.body.classList.add('dark-mode');
+        }
     </script>
 
-    @if (isDashboardPage || isUserPage)
-    {
-        <div id="loading-overlay" class="loading-overlay">
-            <div class="custom-loader-box">
-                <div id="syncfusion-spinner" style="width: 56px; height: 56px; position: relative;"></div>
-                <span class="loader-label">Ładowanie danych...</span>
-            </div>
-        </div>
-        <script>
-            (function () {
-                const spinnerTarget = document.getElementById('syncfusion-spinner');
-                if (spinnerTarget && typeof ej !== 'undefined' && ej.popups) {
-                    ej.popups.createSpinner({ target: spinnerTarget, width: '48px' });
-                    ej.popups.showSpinner(spinnerTarget);
-                }
-            })();
-        </script>
-    }
-
     <partial name="_SideBar.cshtml" />
+    <div id="mobile-sidebar-backdrop" class="mobile-sidebar-backdrop"></div>
 
     <div class="page-wrapper">
         <partial name="_NavBar.cshtml" />
 
         <main role="main" class="main-content">
-            <div class="container-fluid px-4 py-4">
+            @if (showPageLoader)
+            {
+                <div id="loading-overlay" class="loading-overlay">
+                    <div class="custom-loader-box">
+                        <div class="page-spinner" role="status" aria-hidden="true"></div>
+                        <span class="loader-label">Wczytywanie widoku...</span>
+                    </div>
+                </div>
+            }
+
+            <div id="page-content-shell" class="container-fluid px-4 py-4 page-content-shell @(showPageLoader ? "is-loading" : "is-entering")">
                 <div class="row justify-content-center">
                     <div class="@(isDashboardPage ? "col-12" : "col-xl-11 col-12")">
                         @if (!isDashboardPage)
@@ -146,6 +155,8 @@
             </div>
         </footer>
     </div>
+
+    <partial name="_BottomNav.cshtml" />
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>

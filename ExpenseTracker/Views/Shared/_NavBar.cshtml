@@ -1,11 +1,17 @@
 ﻿@using System.Globalization
 @{
     var userImage = Context.Session.GetString("UserImage");
-    var imageUrl = !string.IsNullOrEmpty(userImage) ? userImage : "~/userImage.png";
+    var fallbackImageUrl = Url.Content("~/userImage.png");
+    var imageUrl = !string.IsNullOrEmpty(userImage) ? Url.Content(userImage) : fallbackImageUrl;
     var todayFormatted = DateTime.Now.ToString("dddd, dd MMMM yyyy", new CultureInfo("pl-PL"));
 }
 
-<nav class="navbar sticky-top my-navbar" id="navbar">
+<nav class="navbar sticky-top my-navbar"
+     id="navbar"
+     data-notifications-url="@Url.Action("Index", "Notification")"
+     data-unread-count-url="@Url.Action("GetUnreadCount", "Notification")"
+     data-mark-read-url="@Url.Action("MarkAllAsRead", "Notification")"
+     data-generate-report-url="@Url.Action("GenerateWeeklyReport", "Notification")">
     <div class="container-fluid py-2 px-4">
         <div class="d-flex align-items-center gap-3">
             <button type="button" id="mobile-menu-btn" class="navbar-icon-btn d-md-none" title="Otwórz menu">
@@ -13,7 +19,7 @@
             </button>
             <div class="d-flex align-items-center text-muted small">
                 <i class="fa-regular fa-calendar me-2 text-success"></i>
-                <span class="text-capitalize fw-medium">@todayFormatted</span>
+                <span class="text-capitalize fw-medium navbar-date-text">@todayFormatted</span>
             </div>
         </div>
 
@@ -55,7 +61,13 @@
             </div>
 
             <div class="profile-container">
-                <img src="@Url.Content(imageUrl)" alt="Zdjęcie profilowe" class="profile-pic" id="profileImage" />
+                <img src="@imageUrl"
+                     data-fallback-src="@fallbackImageUrl"
+                     alt="Zdjęcie profilowe"
+                     width="36"
+                     height="36"
+                     class="profile-pic"
+                     id="profileImage" />
                 <div class="profile-tooltip" id="profileTooltip">
                     <a href="@Url.Action("User", "Home")">Ustawienia profilu</a>
                 </div>
@@ -63,196 +75,3 @@
         </div>
     </div>
 </nav>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const darkModeToggle = document.getElementById('darkModeToggle');
-        const darkModeIcon = document.getElementById('darkModeIcon');
-        const syncfusionTheme = document.getElementById('syncfusion-theme');
-
-        function updateDarkModeIcon(isDark) {
-            if (!darkModeIcon) return;
-            darkModeIcon.className = isDark ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
-        }
-
-        updateDarkModeIcon(document.body.classList.contains('dark-mode'));
-
-        if (darkModeToggle) {
-            darkModeToggle.onclick = function () {
-                const isDark = document.body.classList.toggle('dark-mode');
-                localStorage.setItem('expenseTracker_darkMode', isDark ? 'true' : 'false');
-                if (syncfusionTheme) {
-                    syncfusionTheme.href = isDark
-                        ? 'https://cdn.syncfusion.com/ej2/25.2.3/fabric-dark.css'
-                        : 'https://cdn.syncfusion.com/ej2/25.2.3/fabric.css';
-                }
-                updateDarkModeIcon(isDark);
-            };
-        }
-
-        const profileImage = document.getElementById('profileImage');
-        const profileTooltip = document.getElementById('profileTooltip');
-
-        if (profileImage && profileTooltip) {
-            profileImage.onclick = function (e) {
-                profileTooltip.classList.toggle('active');
-                if (bellTooltip) bellTooltip.classList.remove('active');
-                if (reportTooltip) reportTooltip.classList.remove('active');
-                e.stopPropagation();
-            };
-        }
-
-        const notificationBell = document.getElementById('notificationBell');
-        const bellTooltip = document.getElementById('bellTooltip');
-        const transactionNotificationBadge = document.getElementById('transactionNotificationBadge');
-        const notificationContent = document.getElementById('notificationContent');
-        const markAllReadBtn = document.getElementById('markAllReadBtn');
-
-        const weeklyReportIcon = document.getElementById('weeklyReportIcon');
-        const reportTooltip = document.getElementById('reportTooltip');
-        const weeklyReportBadge = document.getElementById('weeklyReportBadge');
-        const reportContent = document.getElementById('reportContent');
-        const generateReportBtn = document.getElementById('generateReportBtn');
-
-        if (notificationBell && bellTooltip) {
-            notificationBell.onclick = function (e) {
-                bellTooltip.classList.toggle('active');
-                if (reportTooltip) reportTooltip.classList.remove('active');
-                if (profileTooltip) profileTooltip.classList.remove('active');
-                e.stopPropagation();
-                loadNotifications();
-            };
-        }
-
-        if (weeklyReportIcon && reportTooltip) {
-            weeklyReportIcon.onclick = function (e) {
-                reportTooltip.classList.toggle('active');
-                if (bellTooltip) bellTooltip.classList.remove('active');
-                if (profileTooltip) profileTooltip.classList.remove('active');
-                e.stopPropagation();
-                loadWeeklyReports();
-            };
-        }
-
-        document.addEventListener('click', function (e) {
-            if (bellTooltip && !bellTooltip.contains(e.target) && !notificationBell.contains(e.target)) {
-                bellTooltip.classList.remove('active');
-            }
-            if (reportTooltip && !reportTooltip.contains(e.target) && !weeklyReportIcon.contains(e.target)) {
-                reportTooltip.classList.remove('active');
-            }
-            if (profileTooltip && !profileTooltip.contains(e.target) && e.target !== profileImage) {
-                profileTooltip.classList.remove('active');
-            }
-        });
-
-        if (markAllReadBtn) {
-            markAllReadBtn.onclick = function (e) {
-                e.preventDefault();
-                fetch('@Url.Action("MarkAllAsRead", "Notification")', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        transactionNotificationBadge.style.display = 'none';
-                        weeklyReportBadge.classList.remove('active');
-                        loadNotifications();
-                    }
-                });
-            };
-        }
-
-        if (generateReportBtn) {
-            generateReportBtn.onclick = function (e) {
-                e.preventDefault();
-                fetch('@Url.Action("GenerateWeeklyReport", "Notification")', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        weeklyReportBadge.classList.add('active');
-                        weeklyReportBadge.textContent = '!';
-                        loadWeeklyReports();
-                    }
-                });
-            };
-        }
-
-        function loadNotifications() {
-            fetch('@Url.Action("Index", "Notification")')
-                .then(response => response.text())
-                .then(html => {
-                    const parser = new DOMParser();
-                    const doc = parser.parseFromString(html, 'text/html');
-                    const notifications = doc.querySelectorAll('.notification-item');
-
-                    notificationContent.innerHTML = '';
-                    let hasItems = false;
-
-                    notifications.forEach(function (notification) {
-                        if (notification.getAttribute('data-type') === '1') {
-                            notificationContent.appendChild(notification.cloneNode(true));
-                            hasItems = true;
-                        }
-                    });
-
-                    if (!hasItems) {
-                        notificationContent.innerHTML = '<p class="text-muted small mb-0">Brak powiadomień</p>';
-                    }
-                });
-        }
-
-        function loadWeeklyReports() {
-            fetch('@Url.Action("Index", "Notification")')
-                .then(response => response.text())
-                .then(html => {
-                    const parser = new DOMParser();
-                    const doc = parser.parseFromString(html, 'text/html');
-                    const notifications = doc.querySelectorAll('.notification-item');
-
-                    reportContent.innerHTML = '';
-                    let hasReports = false;
-
-                    notifications.forEach(function (notification) {
-                        if (notification.getAttribute('data-type') === '2') {
-                            reportContent.appendChild(notification.cloneNode(true));
-                            hasReports = true;
-                        }
-                    });
-
-                    if (!hasReports) {
-                        reportContent.innerHTML = '<p class="text-muted small mb-0">Brak dostępnych raportów</p>';
-                    }
-                });
-        }
-
-        function checkNotifications() {
-            fetch('@Url.Action("GetUnreadCount", "Notification")')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        if (data.transactionCount > 0) {
-                            transactionNotificationBadge.style.display = 'block';
-                            transactionNotificationBadge.textContent = data.transactionCount > 9 ? '9+' : data.transactionCount;
-                        } else {
-                            transactionNotificationBadge.style.display = 'none';
-                        }
-
-                        if (data.hasWeeklyReport) {
-                            weeklyReportBadge.classList.add('active');
-                            weeklyReportBadge.textContent = '!';
-                        } else {
-                            weeklyReportBadge.classList.remove('active');
-                        }
-                    }
-                });
-        }
-
-        checkNotifications();
-        setInterval(checkNotifications, 30000);
-    });
-</script>

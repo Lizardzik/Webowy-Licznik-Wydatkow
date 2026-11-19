@@ -6,9 +6,26 @@
         : Url.Content("~/userImage.png");
 }
 
+@if (TempData["PinSuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["PinSuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Zamknij"></button>
+    </div>
+}
+
+@if (TempData["PinErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @TempData["PinErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Zamknij"></button>
+    </div>
+}
+
 <div class="row g-4">
     <div class="col-lg-8">
-        <div class="widget p-4">
+        <div class="widget p-4 mb-4">
+            <h5 class="fw-bold mb-3">Dane użytkownika i budżet</h5>
             <form asp-action="User" method="post" enctype="multipart/form-data">
                 @Html.AntiForgeryToken()
                 <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
@@ -35,12 +52,12 @@
                 <div class="row g-3 mb-3">
                     <div class="col-md-6">
                         <label asp-for="WalletBalance" class="form-label fw-semibold">Saldo portfela (PLN)</label>
-                        <input asp-for="WalletBalance" type="number" step="0.01" class="form-control" />
+                        <input asp-for="WalletBalance" type="text" inputmode="decimal" class="form-control" value="@Model.WalletBalance.ToString("0.##")" />
                         <span asp-validation-for="WalletBalance" class="text-danger small"></span>
                     </div>
                     <div class="col-md-6">
                         <label asp-for="MonthlyBudgetLimit" class="form-label fw-semibold">Miesięczny limit wydatków (PLN)</label>
-                        <input asp-for="MonthlyBudgetLimit" type="number" step="0.01" min="0" class="form-control" />
+                        <input asp-for="MonthlyBudgetLimit" type="text" inputmode="decimal" class="form-control" value="@Model.MonthlyBudgetLimit.ToString("0.##")" />
                         <span asp-validation-for="MonthlyBudgetLimit" class="text-danger small"></span>
                     </div>
                 </div>
@@ -58,6 +75,33 @@
                 </div>
             </form>
         </div>
+
+        <div class="widget p-4">
+            <h5 class="fw-bold mb-1">Zmiana kodu PIN</h5>
+            <p class="text-muted small mb-3">Zmiana kodu wyloguje inne zapamiętane przeglądarki i urządzenia.</p>
+
+            <form asp-controller="Auth" asp-action="ChangePin" method="post">
+                @Html.AntiForgeryToken()
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Obecny PIN</label>
+                        <input type="password" name="currentPin" inputmode="numeric" pattern="[0-9]*" minlength="4" maxlength="6" required class="form-control" placeholder="••••" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Nowy PIN (4-6 cyfr)</label>
+                        <input type="password" name="newPin" inputmode="numeric" pattern="[0-9]*" minlength="4" maxlength="6" required class="form-control" placeholder="••••" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Powtórz nowy PIN</label>
+                        <input type="password" name="confirmPin" inputmode="numeric" pattern="[0-9]*" minlength="4" maxlength="6" required class="form-control" placeholder="••••" />
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-outline-success">
+                    <i class="fa-solid fa-key me-1"></i>Zmień kod PIN
+                </button>
+            </form>
+        </div>
     </div>
 
     <div class="col-lg-4">
@@ -65,9 +109,18 @@
             <img id="avatarPreview" src="@avatarSrc" alt="Podgląd awatara" class="rounded-circle mb-3 border border-2 border-success" style="width: 110px; height: 110px; object-fit: cover;" />
             <h5 class="fw-bold mb-1">@(string.IsNullOrWhiteSpace(Model.Nickname) ? $"{Model.FirstName} {Model.LastName}" : Model.Nickname)</h5>
             <p class="text-muted small mb-4">@Model.FirstName @Model.LastName</p>
-            <a href="/Admin" class="btn btn-outline-secondary btn-sm w-100">
-                <i class="fa-solid fa-database me-1"></i>Zarządzanie danymi i kopie
-            </a>
+
+            <div class="w-100 d-flex flex-column gap-2">
+                <a href="/Admin" class="btn btn-outline-secondary btn-sm w-100">
+                    <i class="fa-solid fa-database me-1"></i>Zarządzanie danymi i kopie
+                </a>
+                <form asp-controller="Auth" asp-action="Lock" method="post" class="w-100">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-outline-danger btn-sm w-100">
+                        <i class="fa-solid fa-lock me-1"></i>Zablokuj aplikację teraz
+                    </button>
+                </form>
+            </div>
         </div>
     </div>
 </div>

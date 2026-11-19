@@ -1,0 +1,82 @@
+﻿@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#161b22" />
+    <title>Odblokuj - Expense Tracker</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+    <link rel="stylesheet" href="~/css/theme.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <style>
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .pin-card {
+            width: 100%;
+            max-width: 380px;
+        }
+
+        .pin-input {
+            text-align: center;
+            font-size: 1.6rem;
+            letter-spacing: 0.45rem;
+            font-weight: 700;
+            height: 54px;
+        }
+    </style>
+</head>
+<body>
+    <script>
+        if (localStorage.getItem('expenseTracker_darkMode') !== 'false') {
+            document.body.classList.add('dark-mode');
+        }
+    </script>
+
+    <div class="widget p-4 pin-card text-center">
+        <div class="mb-3">
+            <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-success bg-opacity-10 text-success" style="width: 64px; height: 64px;">
+                <i class="fa-solid fa-lock fa-2x"></i>
+            </span>
+        </div>
+        <h4 class="fw-bold mb-1">Expense Tracker</h4>
+        <p class="text-muted small mb-4">Wpisz kod PIN, aby odblokować dostęp do finansów</p>
+
+        @if (ViewBag.Error != null)
+        {
+            <div class="alert alert-danger py-2 small" role="alert">
+                @ViewBag.Error
+            </div>
+        }
+
+        <form asp-controller="Auth" asp-action="Unlock" method="post">
+            @Html.AntiForgeryToken()
+            <div class="mb-3">
+                <input type="password"
+                       name="pin"
+                       inputmode="numeric"
+                       pattern="[0-9]*"
+                       minlength="4"
+                       maxlength="6"
+                       autocomplete="off"
+                       required
+                       autofocus
+                       class="form-control pin-input"
+                       placeholder="••••" />
+            </div>
+            <button type="submit" class="btn btn-success w-100 py-2 fw-semibold">
+                <i class="fa-solid fa-unlock me-1"></i>Odblokuj
+            </button>
+        </form>
+    </div>
+</body>
+</html>

@@ -4,19 +4,19 @@
     ViewData["PageTitle"] = "Transakcje";
     ViewData["PageActionText"] = "+ Nowa transakcja";
     ViewData["PageActionUrl"] = "/Transaction/AddOrEdit";
-
+    ViewData["UseLoader"] = true;
     CultureInfo culture = CultureInfo.CreateSpecificCulture("pl-PL");
     culture.NumberFormat.CurrencyNegativePattern = 1;
 
-    int totalIncome = Model.Where(t => t.Category != null && t.Category.Type == "Income").Sum(t => t.Amount);
-    int totalExpense = Model.Where(t => t.Category != null && t.Category.Type == "Expense").Sum(t => t.Amount);
+    decimal totalIncome = Model.Where(t => t.Category != null && t.Category.Type == "Income").Sum(t => t.Amount);
+    decimal totalExpense = Model.Where(t => t.Category != null && t.Category.Type == "Expense").Sum(t => t.Amount);
 }
 
 <div class="row g-4">
     <div class="col-lg-8 grid-container">
         @Html.EJS().Grid("Transactions").DataSource((IEnumerable<object>)Model).Columns(col =>
         {
-            col.Field("CategoryTitleWithIcon").HeaderText("Kategoria").TextAlign(Syncfusion.EJ2.Grids.TextAlign.Left).Add();
+            col.Template("#categoryColumnTemplate").HeaderText("Kategoria").TextAlign(Syncfusion.EJ2.Grids.TextAlign.Left).Add();
             col.Field("Note").HeaderText("Notatka").TextAlign(Syncfusion.EJ2.Grids.TextAlign.Left).Add();
             col.Field("Date").HeaderText("Data").Width("125").Type("date").Format("dd.MM.yyyy").TextAlign(Syncfusion.EJ2.Grids.TextAlign.Center).Add();
             col.Field("FormattedAmount").HeaderText("Kwota").Width("130").TextAlign(Syncfusion.EJ2.Grids.TextAlign.Center).Add();
@@ -33,11 +33,11 @@
             <div class="w-100 d-flex flex-column gap-2 mb-4">
                 <div class="d-flex justify-content-between px-3 py-2 rounded border">
                     <span class="text-muted">Suma przychodów:</span>
-                    <span class="fw-bold text-success">@totalIncome.ToString("C0", culture)</span>
+                    <span class="fw-bold text-success">@totalIncome.ToString("C2", culture)</span>
                 </div>
                 <div class="d-flex justify-content-between px-3 py-2 rounded border">
                     <span class="text-muted">Suma wydatków:</span>
-                    <span class="fw-bold text-danger">@totalExpense.ToString("C0", culture)</span>
+                    <span class="fw-bold text-danger">@totalExpense.ToString("C2", culture)</span>
                 </div>
             </div>
 
@@ -47,6 +47,17 @@
         </div>
     </div>
 </div>
+
+<script id="categoryColumnTemplate" type="text/x-template">
+    ${if(Category)}
+        <div class="d-flex align-items-center gap-2">
+            <i class="${Category.Icon} ${Category.Type == 'Income' ? 'text-success' : 'text-danger'}" style="width: 20px; text-align: center;"></i>
+            <span>${Category.Title}</span>
+        </div>
+    ${else}
+        <span>${CategoryTitleWithIcon}</span>
+    ${/if}
+</script>
 
 <script id="actionColumnTemplate" type="text/x-template">
     <div class="d-flex flex-row justify-content-center gap-1">

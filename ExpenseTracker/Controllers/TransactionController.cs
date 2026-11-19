@@ -95,6 +95,7 @@ namespace ExpenseTracker.Controllers
                     existingTransaction.Note = transaction.Note;
                     existingTransaction.Date = transaction.Date;
                     existingTransaction.UserId = user.Id;
+                    transaction.Note ??= string.Empty;
 
                     if (newCategory != null)
                     {

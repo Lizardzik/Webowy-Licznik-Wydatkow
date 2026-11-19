@@ -3,7 +3,7 @@
     ViewData["PageTitle"] = "Kategorie";
     ViewData["PageActionText"] = "+ Nowa kategoria";
     ViewData["PageActionUrl"] = "/Category/AddOrEdit";
-
+    ViewData["UseLoader"] = true;
     int expenseCount = Model.Count(c => c.Type == "Expense");
     int incomeCount = Model.Count(c => c.Type == "Income");
 }
@@ -12,7 +12,7 @@
     <div class="col-md-7 grid-container">
         @Html.EJS().Grid("Category").DataSource((IEnumerable<object>)Model).Columns(col =>
         {
-            col.Field("TitleWithIcon").HeaderText("Kategoria").TextAlign(Syncfusion.EJ2.Grids.TextAlign.Left).Add();
+            col.Template("#categoryColumnTemplate").HeaderText("Kategoria").TextAlign(Syncfusion.EJ2.Grids.TextAlign.Left).Add();
             col.Template("#typeColumnTemplate").HeaderText("Typ").Width("130").TextAlign(Syncfusion.EJ2.Grids.TextAlign.Center).Add();
             col.Template("#actionColumnTemplate").HeaderText("Akcje").Width("120").TextAlign(Syncfusion.EJ2.Grids.TextAlign.Center).Add();
         }).AllowPaging(true).PageSettings(page => page.PageSize(8)).Render()
@@ -34,6 +34,13 @@
         </div>
     </div>
 </div>
+
+<script id="categoryColumnTemplate" type="text/x-template">
+    <div class="d-flex align-items-center gap-2">
+        <i class="${Icon} text-success" style="width: 20px; text-align: center;"></i>
+        <span>${Title}</span>
+    </div>
+</script>
 
 <script id="typeColumnTemplate" type="text/x-template">
     ${if(Type=="Income")}

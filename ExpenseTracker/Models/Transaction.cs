@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Globalization;
 
 namespace ExpenseTracker.Models
 {
@@ -7,33 +8,40 @@ namespace ExpenseTracker.Models
     {
         [Key]
         public int TransactionId { get; set; }
-        [Range(1, int.MaxValue, ErrorMessage = "Please select a category.")]
+
+        [Range(1, int.MaxValue, ErrorMessage = "Wybierz kategorię.")]
+        public int CategoryId { get; set; }
+        public Category? Category { get; set; }
+
+        [Range(0.01, 100000000, ErrorMessage = "Kwota musi być większa od zera.")]
+        [Column(TypeName = "decimal(18, 2)")]
+        public decimal Amount { get; set; }
+
+        public string? Note { get; set; }
+
+        public DateTime Date { get; set; } = DateTime.Now;
 
         public int? UserId { get; set; }
         public User? User { get; set; }
-        public int CategoryId { get; set; }
-        public Category? Category { get; set; }
-        [Range(1, int.MaxValue, ErrorMessage = "Amount should be greater than 0.")]
-        public int Amount {  get; set; }
-
-        [Column(TypeName = "nvarchar(75)")]
-        [Required(ErrorMessage="Please give a note for this transaction.")]
-        public string Note { get; set; }
-        public DateTime Date { get; set; } = DateTime.Now;
 
         [NotMapped]
-        public string? CategoryTitleWithIcon {
-            get
-            {
-                return Category == null ? "" : Category.Icon + " " + Category.Title;
-            }
-        }
-        [NotMapped]
-        public string? FormattedAmount
+        public string CategoryTitleWithIcon
         {
             get
             {
-                return ((Category == null || Category.Type == "Expense") ? "- " : "+ " ) + Amount.ToString("C0");
+                return Category == null ? string.Empty : Category.Icon + " " + Category.Title;
+            }
+        }
+
+        [NotMapped]
+        public string FormattedAmount
+        {
+            get
+            {
+                CultureInfo culture = CultureInfo.CreateSpecificCulture("pl-PL");
+                culture.NumberFormat.CurrencyNegativePattern = 1;
+                string sign = (Category == null || Category.Type == "Expense") ? "- " : "+ ";
+                return sign + Amount.ToString("C2", culture);
             }
         }
     }

@@ -1,0 +1,94 @@
+﻿@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#161b22" />
+    <title>Ustaw kod PIN - Expense Tracker</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+    <link rel="stylesheet" href="~/css/theme.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <style>
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .pin-card {
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .pin-input {
+            text-align: center;
+            font-size: 1.4rem;
+            letter-spacing: 0.35rem;
+            font-weight: 700;
+            height: 50px;
+        }
+    </style>
+</head>
+<body>
+    <script>
+        if (localStorage.getItem('expenseTracker_darkMode') !== 'false') {
+            document.body.classList.add('dark-mode');
+        }
+    </script>
+
+    <div class="widget p-4 pin-card">
+        <div class="text-center mb-3">
+            <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-success bg-opacity-10 text-success mb-2" style="width: 64px; height: 64px;">
+                <i class="fa-solid fa-shield-halved fa-2x"></i>
+            </span>
+            <h4 class="fw-bold mb-1">Zabezpiecz aplikację</h4>
+            <p class="text-muted small mb-0">Ustaw kod PIN (od 4 do 6 cyfr), który ochroni dostęp do Twoich danych w sieci.</p>
+        </div>
+
+        @if (ViewBag.Error != null)
+        {
+            <div class="alert alert-danger py-2 small text-center" role="alert">
+                @ViewBag.Error
+            </div>
+        }
+
+        <form asp-controller="Auth" asp-action="SetupPin" method="post">
+            @Html.AntiForgeryToken()
+            <div class="mb-3">
+                <label class="form-label fw-semibold small">Nowy kod PIN</label>
+                <input type="password"
+                       name="newPin"
+                       inputmode="numeric"
+                       pattern="[0-9]*"
+                       minlength="4"
+                       maxlength="6"
+                       required
+                       autofocus
+                       class="form-control pin-input"
+                       placeholder="••••" />
+            </div>
+            <div class="mb-4">
+                <label class="form-label fw-semibold small">Powtórz kod PIN</label>
+                <input type="password"
+                       name="confirmPin"
+                       inputmode="numeric"
+                       pattern="[0-9]*"
+                       minlength="4"
+                       maxlength="6"
+                       required
+                       class="form-control pin-input"
+                       placeholder="••••" />
+            </div>
+            <button type="submit" class="btn btn-success w-100 py-2 fw-semibold">
+                <i class="fa-solid fa-check me-1"></i>Zapisz PIN i przejdź dalej
+            </button>
+        </form>
+    </div>
+</body>
+</html>

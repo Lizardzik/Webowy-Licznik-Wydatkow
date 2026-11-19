@@ -1,7 +1,15 @@
-﻿@model IEnumerable<ExpenseTracker.Controllers.CategoryComparisonItem>
+﻿@using System.Globalization
+@model IEnumerable<ExpenseTracker.Controllers.CategoryComparisonItem>
 @{
     ViewData["PageTitle"] = "Porównanie Miesięcy";
-    int diff = ViewBag.ExpenseDiff ?? 0;
+    ViewData["UseLoader"] = true;
+    CultureInfo culture = CultureInfo.CreateSpecificCulture("pl-PL");
+
+    decimal m1Expense = ViewBag.M1Expense ?? 0m;
+    decimal m1Income = ViewBag.M1Income ?? 0m;
+    decimal m2Expense = ViewBag.M2Expense ?? 0m;
+    decimal m2Income = ViewBag.M2Income ?? 0m;
+    decimal diff = ViewBag.ExpenseDiff ?? 0m;
 }
 
 <div class="widget p-4 mb-4">
@@ -27,15 +35,15 @@
     <div class="col-md-4">
         <div class="widget p-4 text-center h-100">
             <span class="text-muted text-capitalize">Wydatki: @ViewBag.Month1Label</span>
-            <h2 class="fw-bold text-danger mt-2 mb-0">@ViewBag.M1Expense zł</h2>
-            <small class="text-muted">Przychody: @ViewBag.M1Income zł</small>
+            <h2 class="fw-bold text-danger mt-2 mb-0">@m1Expense.ToString("N2", culture) zł</h2>
+            <small class="text-muted">Przychody: @m1Income.ToString("N2", culture) zł</small>
         </div>
     </div>
     <div class="col-md-4">
         <div class="widget p-4 text-center h-100">
             <span class="text-muted text-capitalize">Wydatki: @ViewBag.Month2Label</span>
-            <h2 class="fw-bold text-danger mt-2 mb-0">@ViewBag.M2Expense zł</h2>
-            <small class="text-muted">Przychody: @ViewBag.M2Income zł</small>
+            <h2 class="fw-bold text-danger mt-2 mb-0">@m2Expense.ToString("N2", culture) zł</h2>
+            <small class="text-muted">Przychody: @m2Income.ToString("N2", culture) zł</small>
         </div>
     </div>
     <div class="col-md-4">
@@ -43,17 +51,17 @@
             <span class="text-muted">Różnica wydatków (B względem A)</span>
             @if (diff > 0)
             {
-                <h2 class="fw-bold text-danger mt-2 mb-0">+@diff zł</h2>
+                <h2 class="fw-bold text-danger mt-2 mb-0">+@diff.ToString("N2", culture) zł</h2>
                 <small class="text-danger">Wydano więcej niż w miesiącu bazowym</small>
             }
             else if (diff < 0)
             {
-                <h2 class="fw-bold text-success mt-2 mb-0">@diff zł</h2>
+                <h2 class="fw-bold text-success mt-2 mb-0">@diff.ToString("N2", culture) zł</h2>
                 <small class="text-success">Zaoszczędzono względem miesiąca bazowego</small>
             }
             else
             {
-                <h2 class="fw-bold text-secondary mt-2 mb-0">0 zł</h2>
+                <h2 class="fw-bold text-secondary mt-2 mb-0">0,00 zł</h2>
                 <small class="text-muted">Wydatki na tym samym poziomie</small>
             }
         </div>
@@ -110,16 +118,16 @@
                 {
                     <tr>
                         <td class="fw-bold">@item.CategoryName</td>
-                        <td class="text-end">@item.Month1Amount zł</td>
-                        <td class="text-end">@item.Month2Amount zł</td>
+                        <td class="text-end">@item.Month1Amount.ToString("N2", culture) zł</td>
+                        <td class="text-end">@item.Month2Amount.ToString("N2", culture) zł</td>
                         <td class="text-end fw-bold">
                             @if (item.Difference > 0)
                             {
-                                <span class="text-danger">+@item.Difference zł (więcej)</span>
+                                <span class="text-danger">+@item.Difference.ToString("N2", culture) zł (więcej)</span>
                             }
                             else if (item.Difference < 0)
                             {
-                                <span class="text-success">@item.Difference zł (mniej)</span>
+                                <span class="text-success">@item.Difference.ToString("N2", culture) zł (mniej)</span>
                             }
                             else
                             {

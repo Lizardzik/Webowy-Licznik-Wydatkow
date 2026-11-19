@@ -1,8 +1,12 @@
-﻿@model IEnumerable<ExpenseTracker.Models.Subscription>
+﻿@using System.Globalization
+@model IEnumerable<ExpenseTracker.Models.Subscription>
 @{
     ViewData["PageTitle"] = "Subskrypcje i Stałe Opłaty";
     ViewData["PageActionText"] = "+ Dodaj Subskrypcję";
     ViewData["PageActionUrl"] = "/Subscription/AddOrEdit";
+    ViewData["UseLoader"] = true;
+    CultureInfo culture = CultureInfo.CreateSpecificCulture("pl-PL");
+    decimal totalMonthlyCost = ViewBag.TotalMonthlyCost != null ? (decimal)ViewBag.TotalMonthlyCost : 0m;
 }
 
 @if (TempData["SuccessMessage"] != null)
@@ -13,18 +17,18 @@
     </div>
 }
 
-<div class="row mb-4">
+<div class="row g-3 mb-4">
     <div class="col-md-6">
-        <div class="widget p-4 d-flex align-items-center justify-content-between">
+        <div class="widget p-4 d-flex align-items-center justify-content-between h-100">
             <div>
                 <span class="text-muted">Miesięczny koszt stałych opłat</span>
-                <h2 class="fw-bold text-danger mb-0">@ViewBag.TotalMonthlyCost zł</h2>
+                <h2 class="fw-bold text-danger mb-0">@totalMonthlyCost.ToString("N2", culture) zł</h2>
             </div>
             <i class="fa-solid fa-rotate fa-2xl text-danger"></i>
         </div>
     </div>
     <div class="col-md-6">
-        <div class="widget p-4 d-flex align-items-center justify-content-between">
+        <div class="widget p-4 d-flex align-items-center justify-content-between gap-2 h-100">
             <div>
                 <span class="text-muted">Aktywne subskrypcje</span>
                 <h2 class="fw-bold text-success mb-0">@ViewBag.ActiveCount</h2>
@@ -32,7 +36,7 @@
             <form asp-action="ProcessNow" method="post">
                 @Html.AntiForgeryToken()
                 <button type="submit" class="btn btn-outline-primary btn-sm">
-                    <i class="fa-solid fa-bolt me-1"></i> Sprawdź i rozlicz teraz
+                    <i class="fa-solid fa-bolt me-1"></i>Rozlicz teraz
                 </button>
             </form>
         </div>
@@ -43,7 +47,7 @@
     <div class="col-md-12">
         <div class="widget p-4">
             <div class="table-responsive">
-                <table class="table table-hover align-middle">
+                <table class="table table-hover align-middle mb-0">
                     <thead>
                         <tr>
                             <th>Nazwa</th>
@@ -68,7 +72,15 @@
                         {
                             <tr>
                                 <td class="fw-bold">@item.Title</td>
-                                <td>@item.CategoryTitleWithIcon</td>
+                                <td>
+                                    @if (item.Category != null)
+                                    {
+                                        <div class="d-flex align-items-center gap-2">
+                                            <i class="@item.Category.Icon text-danger" style="width: 18px; text-align: center;"></i>
+                                            <span>@item.Category.Title</span>
+                                        </div>
+                                    }
+                                </td>
                                 <td class="text-danger fw-bold">-@item.FormattedAmount</td>
                                 <td>@item.BillingDay. dzień miesiąca</td>
                                 <td>@item.NextBillingDate.ToString("dd.MM.yyyy")</td>
@@ -82,13 +94,13 @@
                                         <span class="badge bg-secondary">Wstrzymana</span>
                                     }
                                 </td>
-                                <td class="text-end">
-                                    <a href="/Subscription/AddOrEdit/@item.SubscriptionId" class="btn btn-sm btn-outline-secondary me-1">
+                                <td class="text-end text-nowrap">
+                                    <a href="/Subscription/AddOrEdit/@item.SubscriptionId" class="btn btn-sm btn-outline-secondary me-1" title="Edytuj">
                                         <i class="fa-solid fa-pen"></i>
                                     </a>
                                     <form asp-action="Delete" asp-route-id="@item.SubscriptionId" method="post" class="d-inline" onsubmit="return confirm('Usunąć tę subskrypcję?');">
                                         @Html.AntiForgeryToken()
-                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Usuń">
                                             <i class="fa-solid fa-trash-can"></i>
                                         </button>
                                     </form>

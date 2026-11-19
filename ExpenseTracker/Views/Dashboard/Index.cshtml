@@ -7,7 +7,7 @@
 
     decimal walletBalance = Model?.WalletBalance ?? 0m;
     decimal budgetLimit = Model?.MonthlyBudgetLimit ?? 0m;
-    int currentMonthExpense = ViewBag.CurrentMonthExpense ?? 0;
+    decimal currentMonthExpense = ViewBag.CurrentMonthExpense ?? 0m;
 
     int budgetPercent = budgetLimit > 0
         ? (int)Math.Min(100, Math.Round((currentMonthExpense / budgetLimit) * 100))
@@ -33,8 +33,16 @@
 
 @if (TempData["WelcomeUser"] != null)
 {
-    <div id="welcome-banner" class="mb-3">
-        @Html.EJS().Message("welcome-message").Severity(Syncfusion.EJ2.Notifications.Severity.Success).Variant(Syncfusion.EJ2.Notifications.Variant.Filled).Content("Hello " + TempData["WelcomeUser"] + "!").Render()
+    <div id="welcome-overlay" class="welcome-overlay">
+        <div class="welcome-center-card">
+            <div class="mb-3">
+                <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-success bg-opacity-10 text-success" style="width: 56px; height: 56px;">
+                    <i class="fa-solid fa-hand fa-xl"></i>
+                </span>
+            </div>
+            <h4 class="fw-bold mb-1">Cześć, @TempData["WelcomeUser"]</h4>
+            <p class="text-muted small mb-0">Przygotowuję Twój panel finansowy</p>
+        </div>
     </div>
 }
 
@@ -67,7 +75,7 @@
             </div>
             <div>
                 <div class="text-muted small">Saldo portfela</div>
-                <div class="fs-4 fw-bold">@walletBalance.ToString("C0", culture)</div>
+                <div class="fs-4 fw-bold">@walletBalance.ToString("C2", culture)</div>
             </div>
         </div>
     </div>
@@ -116,7 +124,7 @@
             @if (budgetLimit > 0)
             {
                 <small class="text-muted">
-                    Wydano w tym miesiącu: <strong>@currentMonthExpense.ToString("C0", culture)</strong> z <strong>@budgetLimit.ToString("C0", culture)</strong> (@budgetPercent%)
+                    Wydano w tym miesiącu: <strong>@currentMonthExpense.ToString("C2", culture)</strong> z <strong>@budgetLimit.ToString("C2", culture)</strong> (@budgetPercent%)
                 </small>
             }
             else
@@ -318,16 +326,14 @@
                 });
             }
         }
-
-        const welcomeBanner = document.getElementById('welcome-banner');
-        if (welcomeBanner) {
+    const welcomeOverlay = document.getElementById('welcome-overlay');
+    if (welcomeOverlay) {
+        setTimeout(function () {
+            welcomeOverlay.classList.add('hidden');
             setTimeout(function () {
-                welcomeBanner.style.transition = 'opacity 0.5s ease';
-                welcomeBanner.style.opacity = '0';
-                setTimeout(function () {
-                    welcomeBanner.remove();
-                }, 500);
-            }, 4000);
-        }
+                welcomeOverlay.remove();
+            }, 350);
+        }, 1600);
+    }
     });
 </script>

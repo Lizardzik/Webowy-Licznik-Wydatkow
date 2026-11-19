@@ -1,75 +1,62 @@
 ﻿@model ExpenseTracker.Models.Transaction
 @{
-    Dictionary<string, object> htmlAttributes = new Dictionary<string, object>()
-    {
-        { "Date", new Dictionary<string, object> { { "name", "Date" } } },
-        { "CategoryId", new Dictionary<string, object> { { "name", "CategoryId" }, { "required", "required" } } },
-        { "Amount", new Dictionary<string, object> { { "name", "Amount" } } },
-        { "Note", new Dictionary<string, object> { { "name", "Note" } } },
-        { "Button", new Dictionary<string, object> { { "type", "submit" } } },
-        { "CancelButton", new Dictionary<string, object> { { "type", "button" } } }
-    };
-
-    var dropdownFields = new Syncfusion.EJ2.DropDowns.DropDownListFieldSettings
-    {
-        Text = "TitleWithIcon",
-        Value = "CategoryId"
-    };
-
-    var categories = ViewBag.Categories as IEnumerable<Category> ?? Enumerable.Empty<Category>();
-    Category? selectedCategory = categories.FirstOrDefault(c => c.CategoryId == Model.CategoryId);
-    bool isIncome = selectedCategory?.Type == "Income";
-
     ViewData["PageTitle"] = Model.TransactionId == 0 ? "Nowa transakcja" : "Edycja transakcji";
 }
 
-<div class="row g-4">
-    <div class="col-md-7">
-        <div id="transactionFormWidget" class="widget p-4 p-md-5 @(isIncome ? "income-widget" : "expense-widget")">
-            <form asp-action="AddOrEdit" method="post" id="transactionForm">
+<div class="row">
+    <div class="col-lg-7">
+        <div class="widget p-4">
+            <form asp-action="AddOrEdit" method="post">
+                @Html.AntiForgeryToken()
                 <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
-                <input type="hidden" name="TransactionId" value="@Model.TransactionId" />
+                <input type="hidden" asp-for="TransactionId" />
 
-                <div class="control-section mb-3 e-date-wrapper">
-                    @Html.EJS().DatePicker("datepicker").Value(Model.Date == default ? DateTime.Today : Model.Date).HtmlAttributes(htmlAttributes["Date"] as IDictionary<string, object>).Format("dd.MM.yyyy").CssClass("e-datepicker").Placeholder("Data transakcji").FloatLabelType(Syncfusion.EJ2.Inputs.FloatLabelType.Always).Render()
-                    <span asp-validation-for="Date" class="text-danger fs-6"></span>
+                <div class="mb-3">
+                    <label asp-for="Date" class="form-label fw-semibold">Data</label>
+                    <input asp-for="Date" type="date" class="form-control" value="@Model.Date.ToString("yyyy-MM-dd")" />
+                    <span asp-validation-for="Date" class="text-danger small"></span>
                 </div>
 
-                <div class="control-section mb-3 e-dropdown-wrapper">
-                    @Html.EJS().DropDownList("Categories").Value(Model.CategoryId == 0 ? null : Model.CategoryId).AllowFiltering(true).IgnoreAccent(true).FloatLabelType(Syncfusion.EJ2.Inputs.FloatLabelType.Always).FilterType(Syncfusion.EJ2.DropDowns.FilterType.Contains).Placeholder("Wybierz kategorię").DataSource((IEnumerable<object>)categories).Fields(dropdownFields).Change("onCategoryChange").HtmlAttributes(htmlAttributes["CategoryId"] as IDictionary<string, object>).Render()
-                    <span asp-validation-for="CategoryId" class="text-danger fs-6"></span>
+                <div class="mb-3">
+                    <label asp-for="CategoryId" class="form-label fw-semibold">Kategoria</label>
+                    <select asp-for="CategoryId" class="form-select">
+                        @if (ViewBag.Categories is IEnumerable<ExpenseTracker.Models.Category> categories)
+                        {
+                            foreach (var category in categories)
+                            {
+                                <option value="@category.CategoryId">@category.Title</option>
+                            }
+                        }
+                        else if (ViewBag.Categories is SelectList selectList)
+                        {
+                            foreach (var item in selectList)
+                            {
+                                <option value="@item.Value" selected="@item.Selected">@item.Text</option>
+                            }
+                        }
+                    </select>
+                    <span asp-validation-for="CategoryId" class="text-danger small"></span>
                 </div>
 
-                <div class="control-section mb-3">
-                    <div class="control_wrapper textbox-control-section">
-                        @Html.EJS().NumericTextBox("Amount").Value(Model.Amount).Placeholder("Kwota (PLN)").FloatLabelType(Syncfusion.EJ2.Inputs.FloatLabelType.Always).Min(1).Format("c0").Locale("pl-PL").Currency("PLN").HtmlAttributes(htmlAttributes["Amount"] as IDictionary<string, object>).Render()
-                    </div>
-                    <span asp-validation-for="Amount" class="text-danger fs-6"></span>
+                <div class="mb-3">
+                    <label asp-for="Amount" class="form-label fw-semibold">Kwota (PLN)</label>
+                    <input asp-for="Amount" type="text" inputmode="decimal" class="form-control" placeholder="0,00" value="@(Model.Amount == 0 ? string.Empty : Model.Amount.ToString("0.##"))" />
+                    <span asp-validation-for="Amount" class="text-danger small"></span>
                 </div>
 
-                <div class="control-section mb-4">
-                    <div class="control_wrapper textbox-control-section">
-                        @Html.EJS().TextBox("Note").Value(Model.Note).Multiline(true).Placeholder("Notatka (np. nazwa sklepu)").FloatLabelType(Syncfusion.EJ2.Inputs.FloatLabelType.Always).HtmlAttributes(htmlAttributes["Note"] as IDictionary<string, object>).Render()
-                    </div>
-                    <span asp-validation-for="Note" class="text-danger fs-6"></span>
+                <div class="mb-4">
+                    <label asp-for="Note" class="form-label fw-semibold">Notatka <span class="text-muted fw-normal">(opcjonalnie)</span></label>
+                    <input asp-for="Note" class="form-control" placeholder="Dodatkowy opis operacji" />
+                    <span asp-validation-for="Note" class="text-danger small"></span>
                 </div>
 
-                <div class="d-flex gap-2 w-100">
-                    @Html.EJS().Button("primarybtn").Content("Zapisz").CssClass(isIncome ? "e-success flex-grow-1" : "e-danger flex-grow-1").HtmlAttributes(htmlAttributes["Button"] as IDictionary<string, object>).Render()
-                    @Html.EJS().Button("cancelbtn").Content("Anuluj").CssClass("e-outline").HtmlAttributes(htmlAttributes["CancelButton"] as IDictionary<string, object>).Render()
+                <div class="d-flex flex-wrap gap-2">
+                    <button type="submit" class="btn btn-success">
+                        <i class="fa-solid fa-check me-1"></i>Zapisz
+                    </button>
+                    <a asp-action="Index" class="btn btn-outline-secondary">Anuluj</a>
                 </div>
             </form>
-        </div>
-    </div>
-
-    <div class="col-md-5">
-        <div id="transactionPreviewWidget" class="widget h-100 p-4 d-flex flex-column justify-content-center align-items-center text-center @(isIncome ? "income-widget" : "expense-widget")">
-            <i id="transactionIcon" class="@(isIncome ? "fa-solid fa-money-bill-transfer fa-7x text-success mb-3" : "fa-solid fa-credit-card fa-7x text-danger mb-3")"></i>
-            <h5 id="transactionTypeLabel" class="fw-bold mb-1">@(isIncome ? "Przychód" : "Wydatek")</h5>
-            <p class="text-muted small mb-4">Kwota automatycznie zaktualizuje saldo Twojego portfela.</p>
-            <a href="/Scanner" class="btn btn-sm btn-outline-primary">
-                <i class="fa-solid fa-camera me-1"></i>Zeskanuj paragon przez AI
-            </a>
         </div>
     </div>
 </div>
@@ -78,51 +65,4 @@
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
-    <script>
-        const categoriesMetadata = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
-                    categories.Select(c => new { c.CategoryId, c.Type })
-            ));
-
-    function onCategoryChange(args) {
-        const selectedId = args.value;
-        const foundCategory = categoriesMetadata.find(c => c.CategoryId === selectedId);
-        const isIncome = foundCategory && foundCategory.Type === 'Income';
-
-            const formWidget = document.getElementById('transactionFormWidget');
-            const previewWidget = document.getElementById('transactionPreviewWidget');
-            const icon = document.getElementById('transactionIcon');
-            const label = document.getElementById('transactionTypeLabel');
-            const submitButton = document.getElementById('primarybtn');
-
-            [formWidget, previewWidget].forEach(widget => {
-                if (!widget) return;
-                widget.classList.toggle('income-widget', isIncome);
-                widget.classList.toggle('expense-widget', !isIncome);
-            });
-
-            if (icon) {
-                icon.className = isIncome
-                    ? 'fa-solid fa-money-bill-transfer fa-7x text-success mb-3'
-                    : 'fa-solid fa-credit-card fa-7x text-danger mb-3';
-            }
-
-            if (label) {
-                label.textContent = isIncome ? 'Przychód' : 'Wydatek';
-            }
-
-            if (submitButton) {
-                submitButton.classList.toggle('e-success', isIncome);
-                submitButton.classList.toggle('e-danger', !isIncome);
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', function () {
-            const cancelBtn = document.getElementById('cancelbtn');
-            if (cancelBtn) {
-                cancelBtn.addEventListener('click', function () {
-                    window.location.href = '@Url.Action("Index", "Transaction")';
-                });
-            }
-        });
-    </script>
 }
