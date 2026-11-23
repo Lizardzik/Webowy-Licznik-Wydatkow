@@ -1,4 +1,4 @@
-﻿const CACHE_NAME = 'expense-tracker-v2';
+﻿const CACHE_NAME = 'expense-tracker-v4';
 const OFFLINE_URL = '/offline.html';
 const STATIC_ASSETS = [
     '/offline.html',
@@ -6,7 +6,10 @@ const STATIC_ASSETS = [
     '/css/theme.css',
     '/css/site.css',
     '/css/site-mobile.css',
-    '/js/site.js',
+    '/js/app-core.js',
+    '/js/navbar.js',
+    '/js/sidebar-desktop.js',
+    '/js/sidebar-mobile.js',
     '/icons/icon-192.png',
     '/icons/icon-512.png'
 ];
@@ -69,15 +72,20 @@ self.addEventListener('fetch', function (event) {
     if (isStaticAsset) {
         event.respondWith(
             caches.match(event.request).then(function (cachedResponse) {
-                const networkFetch = fetch(event.request).then(function (networkResponse) {
-                    if (networkResponse && networkResponse.ok) {
-                        const responseClone = networkResponse.clone();
-                        caches.open(CACHE_NAME).then(function (cache) {
-                            cache.put(event.request, responseClone);
-                        });
-                    }
-                    return networkResponse;
-                });
+                const networkFetch = fetch(event.request)
+                    .then(function (networkResponse) {
+                        if (networkResponse && networkResponse.ok) {
+                            const responseClone = networkResponse.clone();
+                            caches.open(CACHE_NAME).then(function (cache) {
+                                cache.put(event.request, responseClone);
+                            });
+                        }
+                        return networkResponse;
+                    })
+                    .catch(function () {
+                        return cachedResponse;
+                    });
+
                 return cachedResponse || networkFetch;
             })
         );

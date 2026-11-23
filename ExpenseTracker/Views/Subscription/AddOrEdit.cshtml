@@ -1,6 +1,7 @@
 ﻿@model ExpenseTracker.Models.Subscription
 @{
     ViewData["PageTitle"] = Model.SubscriptionId == 0 ? "Nowa Subskrypcja" : "Edytuj Subskrypcję";
+    ViewData["UseLoader"] = true;
 }
 
 <div class="row g-4">
@@ -19,7 +20,16 @@
 
                 <div class="mb-3">
                     <label asp-for="CategoryId" class="form-label fw-bold">Kategoria wydatku</label>
-                    @Html.EJS().DropDownListFor(m => m.CategoryId).DataSource((IEnumerable<object>)ViewBag.Categories).Fields(new Syncfusion.EJ2.DropDowns.DropDownListFieldSettings { Value = "CategoryId", Text = "Title" }).ItemTemplate("<div class='d-flex align-items-center gap-2'><i class='${Icon} text-danger'></i><span>${Title}</span></div>").ValueTemplate("<div class='d-flex align-items-center gap-2'><i class='${Icon} text-danger'></i><span>${Title}</span></div>").Placeholder("Wybierz kategorię").FloatLabelType(Syncfusion.EJ2.Inputs.FloatLabelType.Never).Render()
+                    <select asp-for="CategoryId" class="form-select">
+                        <option value="0">Wybierz kategorię</option>
+                        @if (ViewBag.Categories is IEnumerable<ExpenseTracker.Models.Category> categories)
+                        {
+                            foreach (var category in categories)
+                            {
+                                <option value="@category.CategoryId">@category.Title</option>
+                            }
+                        }
+                    </select>
                     <span asp-validation-for="CategoryId" class="text-danger small"></span>
                 </div>
 

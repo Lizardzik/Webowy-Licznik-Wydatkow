@@ -3,6 +3,7 @@
     ViewData["PageTitle"] = "Skaner AI Paragonów i Zrzutów";
     var categories = ViewBag.Categories as List<ExpenseTracker.Models.Category> ?? new();
     string usedModel = ViewBag.UsedModel as string ?? string.Empty;
+    ViewData["UseLoader"] = true;
 }
 
 @if (TempData["ErrorMessage"] != null)

@@ -8,7 +8,8 @@
         notifications: navbarElement.getAttribute('data-notifications-url') || '',
         unreadCount: navbarElement.getAttribute('data-unread-count-url') || '',
         markRead: navbarElement.getAttribute('data-mark-read-url') || '',
-        generateReport: navbarElement.getAttribute('data-generate-report-url') || ''
+        generateReport: navbarElement.getAttribute('data-generate-report-url') || '',
+        reportsPage: navbarElement.getAttribute('data-reports-page-url') || '/Report'
     };
 
     const darkModeToggle = document.getElementById('darkModeToggle');
@@ -71,6 +72,35 @@
         targetTooltip.classList.toggle('active');
     }
 
+    function buildNotificationNode(sourceItem, itemType) {
+        const clonedItem = sourceItem.cloneNode(true);
+        if (itemType !== '2') {
+            return clonedItem;
+        }
+
+        const existingAnchor = clonedItem.querySelector('a');
+        const targetUrl = (existingAnchor && existingAnchor.getAttribute('href'))
+            || clonedItem.getAttribute('data-url')
+            || endpoints.reportsPage;
+
+        clonedItem.style.cursor = 'pointer';
+        clonedItem.setAttribute('role', 'button');
+        clonedItem.setAttribute('tabindex', '0');
+
+        clonedItem.addEventListener('click', function () {
+            window.location.href = targetUrl;
+        });
+
+        clonedItem.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                window.location.href = targetUrl;
+            }
+        });
+
+        return clonedItem;
+    }
+
     function loadNotificationItemsByType(itemType, containerElement, emptyMessage) {
         if (!containerElement || !endpoints.notifications) {
             return;
@@ -93,7 +123,7 @@
 
                 items.forEach(function (item) {
                     if (item.getAttribute('data-type') === itemType) {
-                        containerElement.appendChild(item.cloneNode(true));
+                        containerElement.appendChild(buildNotificationNode(item, itemType));
                         hasMatchingItems = true;
                     }
                 });

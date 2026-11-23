@@ -1,43 +1,94 @@
-﻿@model IEnumerable<ExpenseTracker.Models.Notification>
+﻿@using System.Text.RegularExpressions
+@model IEnumerable<ExpenseTracker.Models.Notification>
 @{
     ViewData["PageTitle"] = "Powiadomienia";
+    ViewData["UseLoader"] = true;
+    string? highlightedReportId = Context.Request.Query["reportId"];
+
+    string FormatDisplayMessage(string? rawMessage, bool isWeeklyReport)
+    {
+        if (string.IsNullOrWhiteSpace(rawMessage))
+        {
+            return isWeeklyReport ? "Nowy raport tygodniowy" : "Nowa transakcja";
+        }
+
+        Match legacyMatch = Regex.Match(
+            rawMessage,
+            @"^New Transaction (.+?) worth \$?([0-9.,]+) has been added\.$",
+            RegexOptions.IgnoreCase);
+
+        if (legacyMatch.Success)
+        {
+            string categoryName = legacyMatch.Groups[1].Value;
+            string amountText = legacyMatch.Groups[2].Value.Replace('.', ',');
+            return $"Nowa transakcja: {categoryName} ({amountText} zł).";
+        }
+
+        return rawMessage;
+    }
 }
 
 <div class="widget p-4">
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
         <h5 class="fw-bold mb-0">Historia powiadomień i raportów</h5>
-        @if (Model != null && Model.Any(n => !n.IsRead))
-        {
-            <button type="button" id="pageMarkAllReadBtn" class="btn btn-sm btn-outline-success">
-                <i class="fa-solid fa-check-double me-1"></i>Oznacz wszystkie jako przeczytane
-            </button>
-        }
+        <div class="d-flex flex-wrap gap-2">
+            <a href="@Url.Action("Index", "Report")" class="btn btn-sm btn-outline-secondary">
+                <i class="fa-solid fa-file-pdf me-1"></i>Raporty PDF
+            </a>
+            @if (Model != null && Model.Any(n => !n.IsRead))
+            {
+                <button type="button" id="pageMarkAllReadBtn" class="btn btn-sm btn-outline-success">
+                    <i class="fa-solid fa-check-double me-1"></i>Oznacz wszystkie jako przeczytane
+                </button>
+            }
+        </div>
     </div>
 
     @if (Model != null && Model.Any())
     {
-        <div class="notification-list d-flex flex-column gap-2">
+        <div class="notification-list d-flex flex-column gap-3">
             @foreach (var notification in Model)
             {
                 bool isWeeklyReport = notification.Type == ExpenseTracker.Models.NotificationType.WeeklyReport;
-                string displayMessage = string.IsNullOrWhiteSpace(notification.Message)
-                ? (isWeeklyReport ? "Nowy raport tygodniowy" : "Nowa transakcja")
-                : notification.Message;
+                string formattedMessage = FormatDisplayMessage(notification.Message, isWeeklyReport);
+                string[] reportSegments = isWeeklyReport
+                ? formattedMessage.Split(" | ", StringSplitOptions.RemoveEmptyEntries)
+                : Array.Empty<string>();
+                bool isHighlighted = highlightedReportId == notification.Id.ToString();
+                string reportUrl = Url.Action("Index", "Notification", new { reportId = notification.Id }) ?? "/Notification";
 
-                <div class="notification-item p-3 rounded border @(notification.IsRead ? "opacity-75" : "border-success")"
+                <div id="notification-@notification.Id"
+                     class="notification-item p-3 rounded border @(isHighlighted ? "border-success shadow-sm" : (notification.IsRead ? "opacity-75" : "border-success"))"
                      data-id="@notification.Id"
-                     data-type="@((int)notification.Type)">
+                     data-type="@((int)notification.Type)"
+                     data-url="@reportUrl">
                     <div class="d-flex justify-content-between align-items-start gap-3">
-                        <div class="d-flex align-items-center gap-2">
+                        <div class="d-flex align-items-start gap-2 flex-grow-1">
                             @if (isWeeklyReport)
                             {
-                                <i class="fa-solid fa-chart-line text-success"></i>
+                                <i class="fa-solid fa-chart-line text-success mt-1"></i>
+                                <div class="w-100">
+                                    <div class="fw-bold mb-1">
+                                        @(reportSegments.Length > 0 ? reportSegments[0] : formattedMessage)
+                                    </div>
+                                    @if (reportSegments.Length > 1)
+                                    {
+                                        <div class="d-flex flex-wrap gap-2 mt-2">
+                                            @for (int i = 1; i < reportSegments.Length; i++)
+                                            {
+                                                <span class="badge bg-secondary bg-opacity-10 text-body border px-2 py-1 fw-medium">
+                                                    @reportSegments[i]
+                                                </span>
+                                            }
+                                        </div>
+                                    }
+                                </div>
                             }
                             else
                             {
-                                <i class="fa-solid fa-circle-plus text-primary"></i>
+                                <i class="fa-solid fa-circle-plus text-primary mt-1"></i>
+                                <span class="@(notification.IsRead ? "fw-normal" : "fw-bold")">@formattedMessage</span>
                             }
-                            <span class="@(notification.IsRead ? "fw-normal" : "fw-bold")">@displayMessage</span>
                         </div>
                         <small class="text-muted text-nowrap">@notification.CreatedAt.ToString("dd.MM.yyyy HH:mm")</small>
                     </div>
@@ -57,18 +108,27 @@
 @section Scripts {
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            const highlightedElement = document.querySelector('.notification-item.shadow-sm');
+            if (highlightedElement) {
+                highlightedElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
             const pageMarkAllBtn = document.getElementById('pageMarkAllReadBtn');
-            if (!pageMarkAllBtn) return;
+            if (!pageMarkAllBtn) {
+                return;
+            }
 
             pageMarkAllBtn.addEventListener('click', function () {
                 fetch('@Url.Action("MarkAllAsRead", "Notification")', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' }
                 })
-                .then(response => response.json())
-                .then(data => {
+                .then(function (response) {
+                    return response.json();
+                })
+                .then(function (data) {
                     if (data.success) {
-                        document.querySelectorAll('.notification-item').forEach(item => {
+                        document.querySelectorAll('.notification-item').forEach(function (item) {
                             item.classList.remove('border-success');
                             item.classList.add('opacity-75');
                         });

@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Globalization;
 
@@ -22,6 +23,7 @@ namespace ExpenseTracker.Models
 
         [Range(1, int.MaxValue, ErrorMessage = "Wybierz kategorię")]
         public int CategoryId { get; set; }
+        [ValidateNever]
         public Category? Category { get; set; }
 
         public bool IsActive { get; set; } = true;

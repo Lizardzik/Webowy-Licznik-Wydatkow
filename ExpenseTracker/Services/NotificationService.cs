@@ -1,4 +1,5 @@
-﻿using ExpenseTracker.Data;
+﻿using System.Globalization;
+using ExpenseTracker.Data;
 using ExpenseTracker.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -6,6 +7,7 @@ namespace ExpenseTracker.Services
 {
     public class NotificationService
     {
+        private static readonly CultureInfo PolishCulture = new("pl-PL");
         private readonly ApplicationDbContext _context;
 
         public NotificationService(ApplicationDbContext context)
@@ -35,13 +37,15 @@ namespace ExpenseTracker.Services
             try
             {
                 Category? category = await _context.Categories.FindAsync(transaction.CategoryId);
-                string categoryTitle = category?.Title ?? "Unknown Category";
+                string categoryTitle = category?.Title ?? "Nieznana kategoria";
+                string operationLabel = category?.Type == "Income" ? "Nowy przychód" : "Nowy wydatek";
 
                 var notification = new Notification
                 {
-                    Message = $"New Transaction {categoryTitle} worth {transaction.Amount:C} has been added.",
+                    Message = $"{operationLabel}: {categoryTitle} ({FormatAmount(transaction.Amount)}).",
                     CreatedAt = DateTime.Now,
                     Type = NotificationType.TransactionAdded,
+                    IsRead = false,
                     UserId = transaction.UserId,
                     TransactionId = transaction.TransactionId
                 };
@@ -94,7 +98,7 @@ namespace ExpenseTracker.Services
 
                     _context.Notifications.Add(new Notification
                     {
-                        Message = $"Zaksięgowano subskrypcję: {subscription.Title} ({subscription.Amount} zł).",
+                        Message = $"Zaksięgowano subskrypcję: {subscription.Title} ({FormatAmount(subscription.Amount)}).",
                         CreatedAt = DateTime.Now,
                         Type = NotificationType.TransactionAdded,
                         IsRead = false,
@@ -111,7 +115,7 @@ namespace ExpenseTracker.Services
                     {
                         _context.Notifications.Add(new Notification
                         {
-                            Message = $"{reminderPrefix} ({subscription.Amount} zł) w dniu {subscription.NextBillingDate:dd.MM.yyyy}.",
+                            Message = $"{reminderPrefix} ({FormatAmount(subscription.Amount)}) w dniu {subscription.NextBillingDate:dd.MM.yyyy}.",
                             CreatedAt = DateTime.Now,
                             Type = NotificationType.TransactionAdded,
                             IsRead = false,
@@ -128,17 +132,53 @@ namespace ExpenseTracker.Services
         {
             try
             {
-                DateTime startDate = DateTime.Now.AddDays(-7);
+                DateTime startDate = DateTime.Today.AddDays(-6);
                 DateTime endDate = DateTime.Now;
 
                 List<Transaction> transactions = await _context.Transactions
+                    .Include(t => t.Category)
                     .Where(t => t.UserId == userId && t.Date >= startDate && t.Date <= endDate)
                     .ToListAsync();
+
+                decimal totalIncome = transactions
+                    .Where(t => t.Category != null && t.Category.Type == "Income")
+                    .Sum(t => t.Amount);
+
+                decimal totalExpense = transactions
+                    .Where(t => t.Category == null || t.Category.Type != "Income")
+                    .Sum(t => t.Amount);
+
+                decimal netBalance = totalIncome - totalExpense;
+
+                var topExpenseGroup = transactions
+                    .Where(t => t.Category == null || t.Category.Type != "Income")
+                    .GroupBy(t => t.Category?.Title ?? "Inne")
+                    .Select(group => new
+                    {
+                        CategoryTitle = group.Key,
+                        Total = group.Sum(t => t.Amount)
+                    })
+                    .OrderByDescending(item => item.Total)
+                    .FirstOrDefault();
+
+                string topCategorySummary = topExpenseGroup != null
+                    ? $"{topExpenseGroup.CategoryTitle} ({FormatAmount(topExpenseGroup.Total)})"
+                    : "Brak wydatków";
+
+                string reportMessage = string.Join(" | ", new[]
+                {
+                    $"Raport tygodniowy ({startDate:dd.MM} - {endDate:dd.MM.yyyy})",
+                    $"Przychody: {FormatAmount(totalIncome)}",
+                    $"Wydatki: {FormatAmount(totalExpense)}",
+                    $"Bilans: {FormatAmount(netBalance)}",
+                    $"Operacje: {transactions.Count}",
+                    $"Największe wydatki: {topCategorySummary}"
+                });
 
                 var notification = new Notification
                 {
                     Type = NotificationType.WeeklyReport,
-                    Message = "Nowy raport tygodniowy",
+                    Message = reportMessage,
                     IsRead = false,
                     CreatedAt = DateTime.Now,
                     UserId = userId
@@ -173,6 +213,11 @@ namespace ExpenseTracker.Services
             }
 
             await _context.SaveChangesAsync();
+        }
+
+        private static string FormatAmount(decimal amount)
+        {
+            return $"{amount.ToString("N2", PolishCulture)} zł";
         }
     }
 }
