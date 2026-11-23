@@ -1,4 +1,5 @@
-﻿using ExpenseTracker.Data;
+﻿using System.Globalization;
+using ExpenseTracker.Data;
 using ExpenseTracker.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -7,6 +8,7 @@ namespace ExpenseTracker.Controllers
 {
     public class ReportController : Controller
     {
+        private static readonly CultureInfo PolishCulture = CultureInfo.CreateSpecificCulture("pl-PL");
         private readonly ApplicationDbContext _context;
 
         public ReportController(ApplicationDbContext context)
@@ -67,7 +69,8 @@ namespace ExpenseTracker.Controllers
 
                     return new ReportCategoryItem
                     {
-                        CategoryTitle = $"{category.Icon} {category.Title}",
+                        CategoryTitle = category.Title,
+                        CategoryIcon = string.IsNullOrWhiteSpace(category.Icon) ? "fa-solid fa-tag" : category.Icon,
                         Amount = currentSum,
                         PreviousAmount = previousSum,
                         SharePercentage = share,
@@ -77,94 +80,14 @@ namespace ExpenseTracker.Controllers
                 .OrderByDescending(c => c.Amount)
                 .ToList();
 
-            var insights = new List<FinancialInsight>();
-
-            if (totalExpense > totalIncome && totalExpense > 0)
-            {
-                insights.Add(new FinancialInsight
-                {
-                    Severity = "danger",
-                    Title = "Ujemny bilans w wybranym okresie",
-                    Description = $"Twoje wydatki ({totalExpense:N2} zł) przekroczyły przychody ({totalIncome:N2} zł) o {Math.Abs(balance):N2} zł. Przeanalizuj największe kategorie poniżej."
-                });
-            }
-            else if (totalIncome > 0 && balance > 0)
-            {
-                double savingsRate = Math.Round((double)(balance / totalIncome) * 100, 1);
-                insights.Add(new FinancialInsight
-                {
-                    Severity = "success",
-                    Title = "Dodatni bilans i oszczędności",
-                    Description = $"Zaoszczędziłeś {balance:N2} zł, co stanowi {savingsRate}% Twoich przychodów w tym okresie."
-                });
-            }
-
-            if (user.MonthlyBudgetLimit > 0)
-            {
-                if (totalExpense > user.MonthlyBudgetLimit)
-                {
-                    insights.Add(new FinancialInsight
-                    {
-                        Severity = "danger",
-                        Title = "Przekroczono założony limit budżetu!",
-                        Description = $"Ustawiony limit wynosi {user.MonthlyBudgetLimit:N2} zł, natomiast wydatki osiągnęły {totalExpense:N2} zł (przekroczenie o {(totalExpense - user.MonthlyBudgetLimit):N2} zł)."
-                    });
-                }
-                else if (totalExpense > user.MonthlyBudgetLimit * 0.85m)
-                {
-                    insights.Add(new FinancialInsight
-                    {
-                        Severity = "warning",
-                        Title = "Zbliżasz się do limitu budżetu",
-                        Description = $"Wykorzystałeś już {Math.Round(totalExpense / user.MonthlyBudgetLimit * 100, 0)}% swojego miesięcznego limitu ({totalExpense:N2} zł z {user.MonthlyBudgetLimit:N2} zł)."
-                    });
-                }
-            }
-
-            ReportCategoryItem? topCategory = categoryBreakdown.FirstOrDefault();
-            if (topCategory != null && topCategory.SharePercentage >= 35)
-            {
-                insights.Add(new FinancialInsight
-                {
-                    Severity = "warning",
-                    Title = $"Jedna kategoria pochłania większość budżetu ({topCategory.CategoryTitle})",
-                    Description = $"Na kategorię {topCategory.CategoryTitle} wydałeś {topCategory.Amount:N2} zł, co stanowi aż {topCategory.SharePercentage}% wszystkich wydatków w tym okresie."
-                });
-            }
-
-            foreach (ReportCategoryItem item in categoryBreakdown.Where(c => c.PreviousAmount > 0 && c.Amount > c.PreviousAmount))
-            {
-                double increasePct = Math.Round((double)((item.Amount - item.PreviousAmount) / item.PreviousAmount) * 100, 0);
-                if (increasePct >= 25 && (item.Amount - item.PreviousAmount) >= 100m)
-                {
-                    insights.Add(new FinancialInsight
-                    {
-                        Severity = "danger",
-                        Title = $"Duży wzrost wydatków: {item.CategoryTitle} (+{increasePct}%)",
-                        Description = $"Wydałeś {item.Amount:N2} zł wobec {item.PreviousAmount:N2} zł w poprzednim analogicznym okresie (+{(item.Amount - item.PreviousAmount):N2} zł więcej)."
-                    });
-                }
-            }
-
-            if (subsMonthlyCost > 0)
-            {
-                insights.Add(new FinancialInsight
-                {
-                    Severity = "info",
-                    Title = $"Stałe opłaty i subskrypcje: {subsMonthlyCost:N2} zł / mies.",
-                    Description = $"Masz {activeSubs.Count} aktywnych subskrypcji, które co miesiąc automatycznie obciążają Twój portfel na łączną kwotę {subsMonthlyCost:N2} zł."
-                });
-            }
-
-            if (insights.Count == 0)
-            {
-                insights.Add(new FinancialInsight
-                {
-                    Severity = "info",
-                    Title = "Brak wykrytych anomalii finansowych",
-                    Description = "Twoje wydatki mieszczą się w normie lub brakuje jeszcze wystarczającej historii do porównania."
-                });
-            }
+            List<FinancialInsight> insights = BuildInsights(
+                totalIncome,
+                totalExpense,
+                balance,
+                user.MonthlyBudgetLimit,
+                subsMonthlyCost,
+                activeSubs.Count,
+                categoryBreakdown);
 
             ViewBag.StartDate = start.ToString("yyyy-MM-dd");
             ViewBag.EndDate = end.ToString("yyyy-MM-dd");
@@ -187,11 +110,119 @@ namespace ExpenseTracker.Controllers
 
             return View();
         }
+
+        private static List<FinancialInsight> BuildInsights(
+            decimal totalIncome,
+            decimal totalExpense,
+            decimal balance,
+            decimal monthlyBudgetLimit,
+            decimal subsMonthlyCost,
+            int activeSubsCount,
+            List<ReportCategoryItem> categoryBreakdown)
+        {
+            var insights = new List<FinancialInsight>();
+
+            if (totalExpense > totalIncome && totalExpense > 0)
+            {
+                insights.Add(new FinancialInsight
+                {
+                    Severity = "danger",
+                    Title = "Ujemny bilans w wybranym okresie",
+                    Description = $"Twoje wydatki ({FormatAmount(totalExpense)}) przekroczyły przychody ({FormatAmount(totalIncome)}) o {FormatAmount(Math.Abs(balance))}. Przeanalizuj największe kategorie poniżej."
+                });
+            }
+            else if (totalIncome > 0 && balance > 0)
+            {
+                double savingsRate = Math.Round((double)(balance / totalIncome) * 100, 1);
+                insights.Add(new FinancialInsight
+                {
+                    Severity = "success",
+                    Title = "Dodatni bilans i oszczędności",
+                    Description = $"Zaoszczędziłeś {FormatAmount(balance)}, co stanowi {savingsRate.ToString("0.#", PolishCulture)}% Twoich przychodów w tym okresie."
+                });
+            }
+
+            if (monthlyBudgetLimit > 0)
+            {
+                if (totalExpense > monthlyBudgetLimit)
+                {
+                    insights.Add(new FinancialInsight
+                    {
+                        Severity = "danger",
+                        Title = "Przekroczono założony limit budżetu",
+                        Description = $"Ustawiony limit wynosi {FormatAmount(monthlyBudgetLimit)}, natomiast wydatki osiągnęły {FormatAmount(totalExpense)} (przekroczenie o {FormatAmount(totalExpense - monthlyBudgetLimit)})."
+                    });
+                }
+                else if (totalExpense > monthlyBudgetLimit * 0.85m)
+                {
+                    decimal usedPercent = Math.Round(totalExpense / monthlyBudgetLimit * 100, 0);
+                    insights.Add(new FinancialInsight
+                    {
+                        Severity = "warning",
+                        Title = "Zbliżasz się do limitu budżetu",
+                        Description = $"Wykorzystałeś już {usedPercent}% swojego miesięcznego limitu ({FormatAmount(totalExpense)} z {FormatAmount(monthlyBudgetLimit)})."
+                    });
+                }
+            }
+
+            ReportCategoryItem? topCategory = categoryBreakdown.FirstOrDefault();
+            if (topCategory != null && topCategory.SharePercentage >= 35)
+            {
+                insights.Add(new FinancialInsight
+                {
+                    Severity = "warning",
+                    Title = $"Jedna kategoria pochłania większość budżetu ({topCategory.CategoryTitle})",
+                    Description = $"Na kategorię {topCategory.CategoryTitle} wydałeś {FormatAmount(topCategory.Amount)}, co stanowi aż {topCategory.SharePercentage.ToString("0.#", PolishCulture)}% wszystkich wydatków w tym okresie."
+                });
+            }
+
+            foreach (ReportCategoryItem item in categoryBreakdown.Where(c => c.PreviousAmount > 0 && c.Amount > c.PreviousAmount))
+            {
+                double increasePct = Math.Round((double)((item.Amount - item.PreviousAmount) / item.PreviousAmount) * 100, 0);
+                if (increasePct >= 25 && (item.Amount - item.PreviousAmount) >= 100m)
+                {
+                    insights.Add(new FinancialInsight
+                    {
+                        Severity = "danger",
+                        Title = $"Duży wzrost wydatków: {item.CategoryTitle} (+{increasePct}%)",
+                        Description = $"Wydałeś {FormatAmount(item.Amount)} wobec {FormatAmount(item.PreviousAmount)} w poprzednim analogicznym okresie (+{FormatAmount(item.Amount - item.PreviousAmount)} więcej)."
+                    });
+                }
+            }
+
+            if (subsMonthlyCost > 0)
+            {
+                insights.Add(new FinancialInsight
+                {
+                    Severity = "info",
+                    Title = $"Stałe opłaty i subskrypcje: {FormatAmount(subsMonthlyCost)} / mies.",
+                    Description = $"Masz {activeSubsCount} aktywnych subskrypcji, które co miesiąc automatycznie obciążają Twój portfel na łączną kwotę {FormatAmount(subsMonthlyCost)}."
+                });
+            }
+
+            if (insights.Count == 0)
+            {
+                insights.Add(new FinancialInsight
+                {
+                    Severity = "info",
+                    Title = "Brak wykrytych anomalii finansowych",
+                    Description = "Twoje wydatki mieszczą się w normie lub brakuje jeszcze wystarczającej historii do porównania."
+                });
+            }
+
+            return insights;
+        }
+
+        private static string FormatAmount(decimal amount)
+        {
+            return $"{amount.ToString("N2", PolishCulture)} zł";
+        }
     }
 
     public class ReportCategoryItem
     {
         public string CategoryTitle { get; set; } = string.Empty;
+        public string CategoryIcon { get; set; } = "fa-solid fa-tag";
         public decimal Amount { get; set; }
         public decimal PreviousAmount { get; set; }
         public double SharePercentage { get; set; }

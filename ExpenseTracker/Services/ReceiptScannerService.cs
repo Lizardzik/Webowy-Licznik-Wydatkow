@@ -95,16 +95,18 @@ namespace ExpenseTracker.Services
             List<Category> availableCategories)
         {
             string base64Image = Convert.ToBase64String(imageBytes);
+            string todayDate = DateTime.Today.ToString("yyyy-MM-dd");
             string categoriesDescription = string.Join(", ", availableCategories.Select(c =>
                 $"Id={c.CategoryId} ({c.Title}, typ={c.Type})"));
 
             string prompt =
                 "Przeanalizuj załączony obraz paragonu lub zrzutu ekranu z aplikacji bankowej. " +
                 "Wyodrębnij wszystkie widoczne transakcje finansowe. " +
+                $"Dzisiejsza data to {todayDate}. " +
                 $"Dostępne kategorie użytkownika: [{categoriesDescription}]. " +
                 "Dla każdej transakcji dopasuj najbardziej pasujące CategoryId z powyższej listy. " +
-                "Kwotę Amount podaj jako zaokrągloną liczbę całkowitą większą od zera. " +
-                "Datę Date podaj w formacie YYYY-MM-DD (jeśli brak daty na obrazie, użyj dzisiejszej). " +
+                "Kwotę Amount podaj jako dokładną liczbę dziesiętną większą od zera z maksymalnie dwoma miejscami po przecinku (np. 18.99), używając kropki jako separatora dziesiętnego. " +
+                $"Datę Date podaj w formacie YYYY-MM-DD (jeśli na obrazie widnieje określenie typu Dzisiaj lub Wczoraj, przelicz je względem daty {todayDate}, a jeśli brakuje roku, użyj bieżącego roku). " +
                 "W polu Note wpisz krótką nazwę sklepu lub tytuł przelewu po polsku. " +
                 "W polu Type wpisz Expense dla wydatku lub Income dla przychodu. " +
                 "Zwróć wyłącznie poprawną tablicę JSON obiektów o polach: CategoryId, Amount, Date, Note, Type.";
@@ -156,26 +158,36 @@ namespace ExpenseTracker.Services
             }
 
             string cleanedJson = CleanMarkdownFences(rawText);
-            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-            var extracted = JsonSerializer.Deserialize<List<ScannedTransactionDto>>(cleanedJson, options)
-                            ?? new List<ScannedTransactionDto>();
+            var serializerOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            List<ScannedTransactionDto> extractedTransactions =
+                JsonSerializer.Deserialize<List<ScannedTransactionDto>>(cleanedJson, serializerOptions)
+                ?? new List<ScannedTransactionDto>();
 
             int fallbackCategoryId = availableCategories.FirstOrDefault()?.CategoryId ?? 0;
 
-            foreach (var item in extracted)
+            foreach (ScannedTransactionDto item in extractedTransactions)
             {
                 if (!availableCategories.Any(c => c.CategoryId == item.CategoryId))
                 {
                     item.CategoryId = fallbackCategoryId;
                 }
 
-                if (item.Amount < 1)
+                if (item.Amount <= 0)
                 {
-                    item.Amount = 1;
+                    item.Amount = 0.01m;
+                }
+                else
+                {
+                    item.Amount = Math.Round(item.Amount, 2, MidpointRounding.AwayFromZero);
+                }
+
+                if (item.Date == default)
+                {
+                    item.Date = DateTime.Today;
                 }
             }
 
-            return extracted;
+            return extractedTransactions;
         }
 
         private static string CleanMarkdownFences(string text)

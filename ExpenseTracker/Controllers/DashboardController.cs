@@ -54,7 +54,7 @@ namespace ExpenseTracker.Controllers
                 .GroupBy(j => j.Category!.CategoryId)
                 .Select(k => new
                 {
-                    categoryTitleWithIcon = k.First().Category!.Icon + " " + k.First().Category!.Title,
+                    categoryTitleWithIcon = k.First().Category!.Title,
                     amount = k.Sum(j => j.Amount),
                     formattedAmount = k.Sum(j => j.Amount).ToString("C2", culture),
                 })
@@ -104,10 +104,11 @@ namespace ExpenseTracker.Controllers
                 .Select(t => new
                 {
                     t.Category!.Title,
+                    CategoryIcon = t.Category.Icon,
                     t.Date,
                     t.Amount,
                     FormattedAmount = t.Amount.ToString("C2", culture),
-                    CategoryTitleWithIcon = t.Category.Icon + " " + t.Category.Title,
+                    CategoryTitleWithIcon = t.Category.Title,
                     CategoryType = t.Category.Type
                 })
                 .ToListAsync();
@@ -117,7 +118,8 @@ namespace ExpenseTracker.Controllers
                 .Take(5)
                 .Select(c => new
                 {
-                    TitleWithIcon = c.Icon + " " + c.Title,
+                    TitleWithIcon = c.Title,
+                    c.Icon,
                     c.Type
                 })
                 .ToListAsync();
@@ -196,7 +198,8 @@ namespace ExpenseTracker.Controllers
 
                     return new CategoryComparisonItem
                     {
-                        CategoryName = $"{category.Icon} {category.Title}",
+                        CategoryName = category.Title,
+                        CategoryIcon = category.Icon,
                         Month1Amount = amount1,
                         Month2Amount = amount2,
                         Difference = amount2 - amount1
@@ -218,21 +221,6 @@ namespace ExpenseTracker.Controllers
             ViewBag.ComparisonData = comparisonItems;
 
             return View(comparisonItems);
-        }
-
-        private async Task<User?> GetCurrentUserAsync()
-        {
-            string? userNickname = HttpContext.Session.GetString("Nickname");
-            if (!string.IsNullOrWhiteSpace(userNickname))
-            {
-                User? sessionUser = await _context.User.FirstOrDefaultAsync(u => u.Nickname == userNickname);
-                if (sessionUser != null)
-                {
-                    return sessionUser;
-                }
-            }
-
-            return await _context.User.OrderBy(u => u.Id).FirstOrDefaultAsync();
         }
 
         private static DateTime ParseMonthOrDefault(string? monthInput, DateTime fallback)
@@ -257,6 +245,7 @@ namespace ExpenseTracker.Controllers
     public class CategoryComparisonItem
     {
         public string CategoryName { get; set; } = string.Empty;
+        public string CategoryIcon { get; set; } = string.Empty;
         public decimal Month1Amount { get; set; }
         public decimal Month2Amount { get; set; }
         public decimal Difference { get; set; }

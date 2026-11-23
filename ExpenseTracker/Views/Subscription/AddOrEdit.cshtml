@@ -20,13 +20,13 @@
 
                 <div class="mb-3">
                     <label asp-for="CategoryId" class="form-label fw-bold">Kategoria wydatku</label>
-                    <select asp-for="CategoryId" class="form-select">
+                    <select asp-for="CategoryId" class="form-select" data-category-select="true">
                         <option value="0">Wybierz kategorię</option>
                         @if (ViewBag.Categories is IEnumerable<ExpenseTracker.Models.Category> categories)
                         {
                             foreach (var category in categories)
                             {
-                                <option value="@category.CategoryId">@category.Title</option>
+                                <option value="@category.CategoryId" data-icon="@category.Icon" data-type="@category.Type">@category.Title</option>
                             }
                         }
                     </select>

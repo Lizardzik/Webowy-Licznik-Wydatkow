@@ -25,23 +25,21 @@ namespace ExpenseTracker.Models
         public User? User { get; set; }
 
         [NotMapped]
-        public string CategoryTitleWithIcon
-        {
-            get
-            {
-                return Category == null ? string.Empty : Category.Icon + " " + Category.Title;
-            }
-        }
+        public string CategoryTitle => Category?.Title ?? "Brak kategorii";
+
+        [NotMapped]
+        public string CategoryIcon => Category?.Icon ?? "fa-solid fa-tag";
+
+        [NotMapped]
+        public string CategoryIconColorClass => Category?.Type == "Income" ? "text-success" : "text-danger";
 
         [NotMapped]
         public string FormattedAmount
         {
             get
             {
-                CultureInfo culture = CultureInfo.CreateSpecificCulture("pl-PL");
-                culture.NumberFormat.CurrencyNegativePattern = 1;
-                string sign = (Category == null || Category.Type == "Expense") ? "- " : "+ ";
-                return sign + Amount.ToString("C2", culture);
+                string sign = Category != null && Category.Type == "Income" ? "+ " : "- ";
+                return $"{sign}{Amount.ToString("N2", new System.Globalization.CultureInfo("pl-PL"))} zł";
             }
         }
     }

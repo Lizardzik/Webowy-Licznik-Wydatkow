@@ -19,7 +19,7 @@
             col.Template("#categoryColumnTemplate").HeaderText("Kategoria").TextAlign(Syncfusion.EJ2.Grids.TextAlign.Left).Add();
             col.Field("Note").HeaderText("Notatka").TextAlign(Syncfusion.EJ2.Grids.TextAlign.Left).Add();
             col.Field("Date").HeaderText("Data").Width("125").Type("date").Format("dd.MM.yyyy").TextAlign(Syncfusion.EJ2.Grids.TextAlign.Center).Add();
-            col.Field("FormattedAmount").HeaderText("Kwota").Width("130").TextAlign(Syncfusion.EJ2.Grids.TextAlign.Center).Add();
+            col.Field("Amount").Template("#amountColumnTemplate").HeaderText("Kwota").Width("135").TextAlign(Syncfusion.EJ2.Grids.TextAlign.Center).Add();
             col.Template("#actionColumnTemplate").HeaderText("Akcje").Width("110").TextAlign(Syncfusion.EJ2.Grids.TextAlign.Center).Add();
         }).AllowPaging(true).PageSettings(page => page.PageSize(8)).AllowSorting(true).Render()
     </div>
@@ -51,11 +51,23 @@
 <script id="categoryColumnTemplate" type="text/x-template">
     ${if(Category)}
         <div class="d-flex align-items-center gap-2">
-            <i class="${Category.Icon} ${Category.Type == 'Income' ? 'text-success' : 'text-danger'}" style="width: 20px; text-align: center;"></i>
+            ${if(Category.Type == "Income")}
+                <i class="${Category.Icon} text-success" style="width: 20px; text-align: center;"></i>
+            ${else}
+                <i class="${Category.Icon} text-danger" style="width: 20px; text-align: center;"></i>
+            ${/if}
             <span>${Category.Title}</span>
         </div>
     ${else}
-        <span>${CategoryTitleWithIcon}</span>
+        <span class="text-muted">Brak kategorii</span>
+    ${/if}
+</script>
+
+<script id="amountColumnTemplate" type="text/x-template">
+    ${if(Category && Category.Type == "Income")}
+        <span class="fw-semibold text-success">${FormattedAmount}</span>
+    ${else}
+        <span class="fw-semibold text-danger">${FormattedAmount}</span>
     ${/if}
 </script>
 

@@ -117,7 +117,12 @@
                 @foreach (var item in Model)
                 {
                     <tr>
-                        <td class="fw-bold">@item.CategoryName</td>
+                        <td class="fw-bold">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="@item.CategoryIcon text-danger" style="width: 20px; text-align: center;"></i>
+                                <span>@item.CategoryName</span>
+                            </div>
+                        </td>
                         <td class="text-end">@item.Month1Amount.ToString("N2", culture) zł</td>
                         <td class="text-end">@item.Month2Amount.ToString("N2", culture) zł</td>
                         <td class="text-end fw-bold">

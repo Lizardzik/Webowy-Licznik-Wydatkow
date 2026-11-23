@@ -1,4 +1,4 @@
-﻿const CACHE_NAME = 'expense-tracker-v4';
+﻿const CACHE_NAME = 'expense-tracker-v7';
 const OFFLINE_URL = '/offline.html';
 const STATIC_ASSETS = [
     '/offline.html',
@@ -10,6 +10,7 @@ const STATIC_ASSETS = [
     '/js/navbar.js',
     '/js/sidebar-desktop.js',
     '/js/sidebar-mobile.js',
+    '/js/category-select.js',
     '/icons/icon-192.png',
     '/icons/icon-512.png'
 ];

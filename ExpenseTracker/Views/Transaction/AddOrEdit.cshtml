@@ -1,6 +1,7 @@
 ﻿@model ExpenseTracker.Models.Transaction
 @{
     ViewData["PageTitle"] = Model.TransactionId == 0 ? "Nowa transakcja" : "Edycja transakcji";
+    ViewData["UseLoader"] = true;
 }
 
 <div class="row">
@@ -19,12 +20,13 @@
 
                 <div class="mb-3">
                     <label asp-for="CategoryId" class="form-label fw-semibold">Kategoria</label>
-                    <select asp-for="CategoryId" class="form-select">
+                    <select asp-for="CategoryId" class="form-select" data-category-select="true">
+                        <option value="0">Wybierz kategorię</option>
                         @if (ViewBag.Categories is IEnumerable<ExpenseTracker.Models.Category> categories)
                         {
                             foreach (var category in categories)
                             {
-                                <option value="@category.CategoryId">@category.Title</option>
+                                <option value="@category.CategoryId" data-icon="@category.Icon" data-type="@category.Type">@category.Title</option>
                             }
                         }
                         else if (ViewBag.Categories is SelectList selectList)

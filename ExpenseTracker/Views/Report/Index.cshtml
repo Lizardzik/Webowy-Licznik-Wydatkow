@@ -186,10 +186,15 @@ else
                         @foreach (var c in categories)
                         {
                             <tr>
-                                <td class="fw-bold">@c.CategoryTitle</td>
+                                <td class="fw-bold">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <i class="@c.CategoryIcon text-danger" style="width: 18px; text-align: center;"></i>
+                                        <span>@c.CategoryTitle</span>
+                                    </div>
+                                </td>
                                 <td class="text-center">@c.TransactionsCount</td>
                                 <td class="text-end fw-bold">@c.Amount.ToString("N2", culture) zł</td>
-                                <td class="text-end">@c.SharePercentage%</td>
+                                <td class="text-end">@c.SharePercentage.ToString("0.#", culture)%</td>
                                 <td class="text-end">
                                     @if (c.Difference > 0)
                                     {
@@ -271,11 +276,14 @@ else
 
         #default-sidebar,
         .my-navbar,
+        .mobile-bottom-nav,
+        .app-footer,
         .no-print,
         .e-breadcrumb {
             display: none !important;
         }
 
+        .page-wrapper,
         .main-content {
             margin-left: 0 !important;
             padding: 0 !important;
